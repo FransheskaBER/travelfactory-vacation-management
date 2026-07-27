@@ -1,0 +1,29 @@
+openapi: 3.0.3
+info:
+  title: My API
+  version: 1.0.0
+paths:
+  /hello:
+    get:
+      x-handler: handlers/hello#getHello
+      summary: Returns a welcome message
+      responses:
+        '200':
+          description: Success
+
+  /hello/:name:
+    get:
+      x-handler: handlers/hello#getHelloByName
+      x-inputParser: handlers/hello#parseHelloByNameInput
+      summary: Returns a personalized welcome message
+      parameters:
+        - in: path
+          name: name
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Success
+        '400':
+          description: Missing parameter
