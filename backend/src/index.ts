@@ -17,6 +17,14 @@ import {
 import { CommonEvent, LambdaEvent } from "commoneventframework/dist/types/commonEvent";
 import { HandlerFn, InputParserFn } from "./handlers/types";
 import { toErrorResponse } from "./errors/toErrorResponse";
+import { registerLoggingListeners } from "./domain/listeners/loggingListeners";
+
+// Explicit wiring, once at startup — never an import side effect, so a
+// pruned "unused" import can't silently unwire logging (spec 4.5 §8 Q5).
+// Registration is pure in-memory subscription and runs at module load,
+// before envReady: listeners must do env/DB work at event time, never at
+// registration time (spec 4.5 §9 adjudication 2).
+registerLoggingListeners();
 
 export const handler = async (
 	event: LambdaEvent,
