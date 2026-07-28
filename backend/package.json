@@ -1,9 +1,10 @@
 {
-  "name": "my-lambda",
+  "name": "travelfactory-backend",
   "version": "1.0.0",
   "description": "",
   "type": "commonjs",
   "scripts": {
+    "codegen": "cef-gen-handlers",
     "dev": "npx ts-node src/index.ts --local",
     "build": "cef-build",
     "build:full": "cef-build --full"
