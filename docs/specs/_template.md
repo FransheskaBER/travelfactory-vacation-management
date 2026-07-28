@@ -6,6 +6,22 @@
 > append-only during implementation — deviations get recorded, never
 > retro-edited into the plan.
 
+> **Record-reconciliation taxonomy** (from spec 4.3's review rounds) —
+> when a decision this spec freezes touches an existing record:
+> - **Operative rules file** (a `.claude/rules/` example, a checklist
+>   bullet) → update in this chunk's scope; it steers future
+>   implementation, staleness is actively harmful (4.3: backend.md example).
+> - **Design doc falsified by the decision** → lockstep update at freeze,
+>   never deferred; the TDD's truth condition is "describes intended
+>   architecture" (4.3 §8 Q9: TDD §1/§3).
+> - **Point-in-time record, no reader-observable divergence** → stays-true
+>   defense, recorded in Q&A (4.3 §8 Q1: ADR 0001).
+> - **Point-in-time record with observable divergence** → dated amendment
+>   note, original text untouched (4.2 §8 Q10: ADR 0003).
+> - **Pre-existing imprecision the decision didn't change** → not this
+>   chunk's debt; at most a Phase 6/7 doc-quality note (4.3: TDD's
+>   `Cmd-->>Client: 409` shorthand).
+
 ## 1. Overview
 What this chunk does and why — traced to a PRD requirement, TDD section,
 or ADR. One paragraph.
