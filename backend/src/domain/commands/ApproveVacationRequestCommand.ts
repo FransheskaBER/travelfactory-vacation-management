@@ -1,5 +1,7 @@
 import { Command } from "../bus/CommandBus";
 import { NotFoundError } from "../../errors/DomainError";
+import { eventDispatcher } from "../events/EventDispatcher";
+import { VacationRequestApprovedEvent } from "../events/VacationRequestApprovedEvent";
 import {
   VacationRequest,
   VacationRequestStatus,
@@ -26,6 +28,10 @@ export class ApproveVacationRequestCommand
 
     request.status = VacationRequestStatus.Approved;
     request.reviewedBy = input.actorId;
-    return this.deps.requests.save(request);
+    const saved = await this.deps.requests.save(request);
+    // Emitted only after save resolves — the commit point. Awaited, and
+    // emit never rejects: listeners react, never gate (ADR 0001, spec 4.5 §4).
+    await eventDispatcher.emit(new VacationRequestApprovedEvent(saved));
+    return saved;
   }
 }

@@ -17,3 +17,8 @@
   not covered. Record the question and answer in §9 Implementation
   Results (§8 Q&A is frozen at approval — post-approval answers live
   in §9).
+- Before writing any code for a chunk: list every decision the spec
+  leaves open. Anything with contract surface or reachable behavior
+  stops for a question; pure internals proceed and are listed in §9
+  with the implementation. (Timing fix from spec 4.5 §9's trend
+  ruling — adjudications are cheapest before the code exists.)
