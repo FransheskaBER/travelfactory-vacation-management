@@ -52,3 +52,7 @@ export const rejectRequest      = requireRole('Validator', async (input, event) 
 
 - Builds on the transport/domain boundary from ADR 0001.
 - Complements the project decision that role is embedded in the JWT at login and the frontend never self-declares its own role — this ADR is the backend enforcement counterpart to that decision.
+
+## Amendments
+
+- **2026-07-28 (chunk 4.2):** Implemented per `docs/specs/2-auth.md`. Two refinements vs. the illustrative snippet above: error bodies use the project's `{ error: { code, message } }` envelope (D10), not the bare-string body shown; and `verifyJwt` returns a decoded payload or `null`, with the wrapper owning the 401/403 responses (the snippet's comment implied `verifyJwt` responded itself). The decision this ADR records is unchanged.
