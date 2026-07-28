@@ -228,7 +228,7 @@ classDiagram
     requireRole ..> RejectVacationRequestCommand : wraps
 ```
 
-Note what this diagram makes visible that the ERD can't: commands depend on the `VacationRequestRepository` **interface**, never the concrete TypeORM class (`ADR 0001`) — which is what makes `FakeVacationRequestRepository` a valid substitute in unit tests (Section 8). `findOneBy` isn't a separate port method; it's TypeORM's own default, used directly since it carries no business meaning to name (`ADR 0001`'s wrap-only-when-it's-a-concept rule).
+Note what this diagram makes visible that the ERD can't: commands depend on the `VacationRequestRepository` **interface**, never the concrete TypeORM class (`ADR 0001`) — which is what makes `FakeVacationRequestRepository` a valid substitute in unit tests (Section 8). `findOneBy` and `save` sit inside the port too, but under TypeORM's own names — the port invents a name only for the one query that encodes a business concept (`findOverlapping`); the adapter delegates the trivial two straight to TypeORM (`ADR 0001`'s wrap-only-when-it's-a-concept rule, read as governing *naming*; this section's earlier prose contradicted the diagram on this point — resolved in the diagram's favor, spec 4.4 §8 Q2/Q9).
 
 ---
 
