@@ -3,6 +3,31 @@ info:
   title: My API
   version: 1.0.0
 paths:
+  /login:
+    post:
+      x-handler: handlers/auth#login
+      x-inputParser: handlers/auth#parseLoginInput
+      summary: Authenticate with email + password, returns a JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                password:
+                  type: string
+      responses:
+        '200':
+          description: JWT issued
+        '400':
+          description: Malformed input
+        '401':
+          description: Invalid credentials
+
   /hello:
     get:
       x-handler: handlers/hello#getHello
@@ -27,3 +52,8 @@ paths:
           description: Success
         '400':
           description: Missing parameter
+        # TEMP guard demo (spec 4.2 §8 Q2) — reverted in 4.6 with the handler wrap
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Requires Validator role

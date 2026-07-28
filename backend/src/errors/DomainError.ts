@@ -16,6 +16,9 @@ export abstract class DomainError extends Error {
   }
 }
 
+/** The caller's identity could not be established (bad credentials). */
+export class UnauthorizedError extends DomainError {}
+
 /** The request is valid but the current state forbids it. */
 export class ConflictError extends DomainError {}
 

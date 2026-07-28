@@ -3,17 +3,23 @@ import {
   ConflictError,
   DomainError,
   NotFoundError,
+  UnauthorizedError,
   ValidationError,
 } from "./DomainError";
 
-/** Shared error envelope for every endpoint (TDD §7). */
-const errorResponse = (status: number, code: string, message: string): Response =>
+/**
+ * Shared error envelope for every endpoint (TDD §7). Exported so transport-
+ * level producers (requireRole's 401/403, parsers' 400s) build the same
+ * shape through the same function — D10's no-drift guarantee.
+ */
+export const errorResponse = (status: number, code: string, message: string): Response =>
   new Response(status, { error: { code, message } });
 
 const statusFor = (err: DomainError): number => {
   if (err instanceof ConflictError) return 409;
   if (err instanceof ValidationError) return 400;
   if (err instanceof NotFoundError) return 404;
+  if (err instanceof UnauthorizedError) return 401;
   return 500;
 };
 
