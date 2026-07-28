@@ -6,6 +6,10 @@
   "scripts": {
     "codegen": "cef-gen-handlers",
     "lint": "eslint src",
+    "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/db/dataSource.ts",
+    "migration:run": "typeorm-ts-node-commonjs migration:run -d src/db/dataSource.ts",
+    "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/db/dataSource.ts",
+    "migration:show": "typeorm-ts-node-commonjs migration:show -d src/db/dataSource.ts",
     "dev": "npx ts-node src/index.ts --local",
     "build": "cef-build",
     "build:full": "cef-build --full"

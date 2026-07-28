@@ -1,9 +1,19 @@
 import "reflect-metadata";
 import { DataSource } from "typeorm";
+import { loadEnv } from "commoneventframework";
 import { getEnvValue } from "commoneventframework/dist/utils/getEnvValue";
+import { User } from "../entities/User";
+import { VacationRequest } from "../entities/VacationRequest";
+import { InitialSchema1785239525809 } from "../migrations/1785239525809-InitialSchema";
 
 let dataSource: DataSource | null = null;
 let initPromise: Promise<DataSource> | null = null;
+
+// gen_random_uuid() is built into Postgres ≥13 — avoids the legacy uuid-ossp
+// extension that TypeORM would otherwise require for uuid defaults.
+const UUID_EXTENSION = "pgcrypto" as const;
+
+const ENTITIES = [User, VacationRequest];
 
 /**
  * Returns the shared, initialized TypeORM DataSource.
@@ -21,7 +31,8 @@ export const getDataSource = (): Promise<DataSource> => {
       url: getEnvValue("DATABASE_URL"),
       synchronize: false,
       logging: true,
-      entities: [],
+      uuidExtension: UUID_EXTENSION,
+      entities: ENTITIES,
     });
 
     initPromise = dataSource.initialize().catch((err) => {
@@ -31,3 +42,30 @@ export const getDataSource = (): Promise<DataSource> => {
   }
   return initPromise;
 };
+
+/**
+ * DataSource for the TypeORM CLI only (migration:generate/run/revert/show) —
+ * the CLI needs an exported DataSource instance and awaits exported promises.
+ * The runtime never initializes this one.
+ *
+ * Relies on internal behavior verified against typeorm@1.1.0 and the installed
+ * CEF dist (see spec 4.1 §4) — re-verify on any upgrade:
+ * - the CLI's loadDataSource awaits every export, so a Promise<DataSource> works
+ * - CEF's loadEnv fails soft when SSM is unreachable
+ *
+ * DATABASE_URL is read from process.env directly (not getEnvValue, which
+ * throws) so this promise can never reject at import time — a missing URL
+ * surfaces as a connection error only when the CLI calls initialize().
+ */
+export const cliDataSource: Promise<DataSource> = loadEnv().then(
+  () =>
+    new DataSource({
+      type: "postgres",
+      url: process.env.DATABASE_URL ?? "",
+      synchronize: false,
+      logging: true,
+      uuidExtension: UUID_EXTENSION,
+      entities: ENTITIES,
+      migrations: [InitialSchema1785239525809],
+    })
+);
