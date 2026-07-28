@@ -11,16 +11,19 @@
     "migration:revert": "typeorm-ts-node-commonjs migration:revert -d src/db/dataSource.ts",
     "migration:show": "typeorm-ts-node-commonjs migration:show -d src/db/dataSource.ts",
     "dev": "npx ts-node src/index.ts --local",
+    "seed": "ts-node src/db/seed.ts",
     "build": "cef-build",
     "build:full": "cef-build --full"
   },
   "dependencies": {
+    "bcrypt": "^6.0.0",
     "commoneventframework": "^1.0.6",
     "pg": "^8.22.0",
     "reflect-metadata": "^0.2.2",
     "typeorm": "^1.1.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^6.0.0",
     "@types/node": "^22.0.0",
     "eslint": "^10.8.0",
     "ts-node": "^10.9.0",
