@@ -22,3 +22,9 @@
   stops for a question; pure internals proceed and are listed in §9
   with the implementation. (Timing fix from spec 4.5 §9's trend
   ruling — adjudications are cheapest before the code exists.)
+- The §9 pure-internals inventory is derived, not recalled: grep the
+  new/edited modules for module-scope declarations and list what comes
+  back. A mechanically generated inventory can be incomplete only if
+  the rule is wrong, which is checkable; one from memory is incomplete
+  whenever attention lapses. (Spec 4.6 §9 audit item 1 — same move as
+  D13: read success off the effect, not the intention.)

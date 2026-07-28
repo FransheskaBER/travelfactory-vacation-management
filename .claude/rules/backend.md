@@ -25,7 +25,9 @@ paths:
 ## Handler shape — every write endpoint, no exceptions
 Handlers implement HandlerFn from src/handlers/types.ts:
 `(input, event) => Promise<object | Response>`. Success = return a plain
-object; CEF wraps it. There is no ok() helper.
+object; CEF wraps it as 200. Non-200 success codes (create's 201) return
+`new Response(status, body)` directly — index.ts passes Responses through
+(spec 4.6 §8 Q3). There is no ok() helper.
 
     export const approveRequest: HandlerFn = requireRole("Validator",
       async (input: ApproveRequestInput) =>
@@ -50,8 +52,16 @@ If a handler grows past ~15 lines, logic is leaking out of the command.
 - Auth failures (401/403) are the requireRole wrapper's job (ADR 0003),
   not DomainErrors. Never let a business rule surface as a 500.
 
+## Input validation (parsers)
+- Never use `new Date(string)` to validate a date: an invalid string
+  yields `Invalid Date` → `NaN`, every NaN comparison returns false, and
+  downstream rules silently pass instead of rejecting. Strict-parse
+  instead: regex + round-trip rebuild via Date.UTC, components
+  re-compared (spec 4.6 §8 Q7).
+
 ## Pagination (list-all endpoint)
-- Query params: ?page=1&limit=20 (defaults; cap limit at 100)
+- Query params: ?page=1&limit=10 (defaults — 10/page is PRD US-5's
+  written acceptance criterion, spec 4.6 §8 Q9; cap limit at 100)
 - Response: { data, total, page, limit } — total from a count query,
   not data.length
 - Always ordered (created_at DESC) — unordered pagination is
