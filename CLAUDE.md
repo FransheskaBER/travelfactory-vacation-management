@@ -47,7 +47,7 @@ over cleverness.
 - Do not invent CEF APIs. Verify any CEF method against the package README
   before using it. If unsure, say so
 - After any edit to root.yaml: run `npm run codegen`, confirm the generated
-  registry compiles
+  registry contains every ref declared in the YAML and compiles
 - Database changes via TypeORM migrations only (synchronize: false, D8).
   Never edit an already-applied migration
 - Before declaring a task done: `tsc --noEmit` passes, lint passes,
