@@ -141,7 +141,8 @@ Two foreign keys point at `User` for two different reasons — `user_id` (who su
 |---|---|---|
 | Unique (auto) | `User.email` | Comes free with the `UNIQUE` constraint required for login lookup |
 | Composite | `VacationRequest(user_id, status)` | Serves `findOverlapping` directly; leading `user_id` also serves queries with no status filter. `status` alone rejected — only 3 distinct values, too low-cardinality to narrow a scan usefully |
-| None | `password`, `reason`, `comments`, `reviewed_by`, `created_at` | Never filtered or sorted on at this project's scale |
+| None | `password`, `reason`, `comments`, `reviewed_by` | Never filtered or sorted on |
+| None | `created_at` | *Is* sorted on — every list endpoint orders by `created_at DESC` (A15) — but deliberately not indexed: at this project's row counts a sequential scan is cheaper than paying index maintenance on every insert. Revisit if list volume ever makes the sort measurable |
 
 ### State Machine — `VacationRequest.status`
 
