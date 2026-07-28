@@ -28,7 +28,7 @@ flowchart TB
         I --> J[(PostgreSQL)]
     end
     subgraph Events["Event Layer — downstream only"]
-        F --> K["Emit domain event, after commit"]
+        F --> K["eventDispatcher.emit() — after commit"]
         K --> L["Logging listener"]
     end
 ```
@@ -41,9 +41,11 @@ sequenceDiagram
     participant CEF
     participant Parser as inputParser
     participant Auth as requireRole('Requester')
+    participant Bus as CommandBus
     participant Cmd as CreateVacationRequestCommand
     participant Repo as VacationRequestRepository
     participant DB as PostgreSQL
+    participant Disp as eventDispatcher
     participant Listener as Logging Listener
 
     Client->>CEF: POST /requests
@@ -54,7 +56,8 @@ sequenceDiagram
     alt wrong role or invalid token
         Auth-->>Client: 401 / 403
     else authorized
-        Auth->>Cmd: execute(input)
+        Auth->>Bus: execute(cmd, input)
+        Bus->>Cmd: execute(input)
         Cmd->>Cmd: validate dates (Rules 1, 4)
         Cmd->>Repo: findOverlapping(userId, start, end)
         Repo->>DB: SELECT (uses user_id, status index)
@@ -66,7 +69,8 @@ sequenceDiagram
             Cmd->>Repo: save(newRequest)
             Repo->>DB: INSERT
             DB-->>Repo: saved row (status = Pending)
-            Cmd->>Listener: emit VacationRequestCreatedEvent
+            Cmd->>Disp: emit(event)
+            Disp->>Listener: awaits sequentially
             Listener->>Listener: log line
             Cmd-->>Client: 201 Created
         end
@@ -180,15 +184,30 @@ classDiagram
     VacationRequestRepository <|.. TypeOrmVacationRequestRepository
     VacationRequestRepository <|.. FakeVacationRequestRepository
 
+    class Command {
+        <<interface>>
+        +execute(input) Promise~TResult~
+    }
+    class CommandBus {
+        +execute(command, input) Promise~TResult~
+    }
+    class EventDispatcher {
+        +subscribe(eventClass, listener) void
+        +emit(event) Promise~void~
+    }
     class CreateVacationRequestCommand {
         +execute(input) VacationRequest
     }
     class ApproveVacationRequestCommand {
-        +execute(id, validatorId) VacationRequest
+        +execute(input) VacationRequest
     }
     class RejectVacationRequestCommand {
-        +execute(id, validatorId, comment) VacationRequest
+        +execute(input) VacationRequest
     }
+    Command <|.. CreateVacationRequestCommand
+    Command <|.. ApproveVacationRequestCommand
+    Command <|.. RejectVacationRequestCommand
+    CommandBus ..> Command : executes, sole dispatch path
     CreateVacationRequestCommand --> VacationRequestRepository : depends on interface
     ApproveVacationRequestCommand --> VacationRequestRepository : depends on interface
     RejectVacationRequestCommand --> VacationRequestRepository : depends on interface
