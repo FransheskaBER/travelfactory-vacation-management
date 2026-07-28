@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "codegen": "cef-gen-handlers",
+    "lint": "eslint src",
     "dev": "npx ts-node src/index.ts --local",
     "build": "cef-build",
     "build:full": "cef-build --full"
@@ -17,7 +18,9 @@
   },
   "devDependencies": {
     "@types/node": "^22.0.0",
+    "eslint": "^10.8.0",
     "ts-node": "^10.9.0",
-    "typescript": "^5.0.0"
+    "typescript": "^5.0.0",
+    "typescript-eslint": "^8.65.0"
   }
 }
