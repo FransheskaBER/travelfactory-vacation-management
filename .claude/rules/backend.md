@@ -8,6 +8,8 @@ paths:
 ## File layout — new code goes in its designated home, nowhere else
 - src/handlers/         CEF entry points only (thin: parse → auth wrap → command → response)
 - src/domain/commands/  one Command class per file
+- src/domain/bus/       CommandBus — the single dispatch choke point; every
+                        command execution goes through commandBus.execute()
 - src/domain/events/    event classes + dispatcher
 - src/domain/listeners/ event listeners (logging etc.)
 - src/errors/           DomainError subclasses + toErrorResponse (exists — extend it, don't relocate)
@@ -27,7 +29,7 @@ object; CEF wraps it. There is no ok() helper.
 
     export const approveRequest: HandlerFn = requireRole("Validator",
       async (input: ApproveRequestInput) =>
-        new ApproveVacationRequestCommand(deps).execute(input));
+        commandBus.execute(new ApproveVacationRequestCommand(deps), input));
 
 How the verified identity from the JWT reaches the command is fixed in
 the chunk 4.2 spec — do not improvise it per handler.

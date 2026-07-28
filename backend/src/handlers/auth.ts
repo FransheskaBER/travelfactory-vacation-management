@@ -8,6 +8,7 @@ import {
   LoginCommand,
   LoginInput,
 } from "../domain/commands/LoginCommand";
+import { commandBus } from "../domain/bus/CommandBus";
 
 // --- POST /login ---
 
@@ -46,4 +47,4 @@ const findUserByEmail: FindUserByEmail = async (email) => {
 };
 
 export const login: HandlerFn = async (input: LoginInput) =>
-  new LoginCommand({ findUserByEmail }).execute(input);
+  commandBus.execute(new LoginCommand({ findUserByEmail }), input);
