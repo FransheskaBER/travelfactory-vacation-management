@@ -1,5 +1,7 @@
 import { Command } from "../bus/CommandBus";
 import { ConflictError, ValidationError } from "../../errors/DomainError";
+import { eventDispatcher } from "../events/EventDispatcher";
+import { VacationRequestCreatedEvent } from "../events/VacationRequestCreatedEvent";
 import {
   VacationRequest,
   VacationRequestStatus,
@@ -64,6 +66,10 @@ export class CreateVacationRequestCommand
     // Explicit rather than left to the DB default: the returned entity must
     // be complete without a reload (spec 4.4 §4).
     request.status = VacationRequestStatus.Pending;
-    return this.deps.requests.save(request);
+    const saved = await this.deps.requests.save(request);
+    // Emitted only after save resolves — the commit point. Awaited, and
+    // emit never rejects: listeners react, never gate (ADR 0001, spec 4.5 §4).
+    await eventDispatcher.emit(new VacationRequestCreatedEvent(saved));
+    return saved;
   }
 }

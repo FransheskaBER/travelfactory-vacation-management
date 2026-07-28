@@ -249,7 +249,7 @@ Note what this diagram makes visible that the ERD can't: commands depend on the 
 |---|---|---|---|
 | `VacationRequestCreatedEvent` | `CreateVacationRequestCommand` | Logging | `"Request #N submitted by <user>, <start>–<end>"` |
 | `VacationRequestApprovedEvent` | `ApproveVacationRequestCommand` | Logging | `"Request #N approved by <reviewer>"` |
-| `VacationRequestRejectedEvent` | `RejectVacationRequestCommand` | Logging | `"Request #N rejected by <reviewer>: <comment>"` |
+| `VacationRequestRejectedEvent` | `RejectVacationRequestCommand` | Logging | `"Request #N rejected by <reviewer>"` — comment excluded from logs (spec 4.5 §8 Q9) |
 
 All three fire only after a successful commit. Listeners are downstream-only — none can gate or reverse the action they're reacting to (`ADR 0001`).
 
