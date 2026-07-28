@@ -203,3 +203,25 @@ the hash can never leak into a response by accident.
 - Files touched matched the §7 advisory list exactly; migration filename is
   `1785239525809-InitialSchema.ts`, class `InitialSchema1785239525809`,
   registered in `cliDataSource` by explicit import per §4.
+
+**2026-07-28 — /spec-check adjudication.** The audit flagged four
+implemented-but-unspecified details; process failure acknowledged — each
+should have been asked *before* implementation (implementation-mode rule).
+Human ruled on all four:
+
+1. `logging: true` on `cliDataSource` — **accepted as-is.** Mirrors runtime
+   config; SQL visibility during migrations is a feature locally. Note for a
+   later chunk: seed inserts through this DataSource will log their
+   parameters (bcrypt hashes) — revisit if logging config ever matters.
+2. `DATABASE_URL ?? ""` — **accepted, refined.** Kept the never-reject-at-
+   import mechanism, added a `console.warn` inside the `.then` when the
+   variable is missing, so a missing `.env` produces a named, early message
+   instead of only a cryptic pg connection error at `initialize()`.
+   Gates re-run after the change: tsc ✓ lint ✓ `migration:show` ✓.
+3. Shared `ENTITIES` / `UUID_EXTENSION` consts — **accepted as-is.** Keeps
+   the two DataSource configs incapable of entity-list drift, which would
+   silently corrupt `migration:generate` diffs.
+4. ORM-level `updated_at` (no DB trigger) — **accepted as-is**, inherent to
+   the §5-specified `@UpdateDateColumn`. Standing constraint for chunk 4.4+:
+   commands mutate `vacation_requests` only through ORM save/update paths,
+   never raw SQL, or `updated_at` silently stops advancing.
