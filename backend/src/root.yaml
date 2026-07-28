@@ -1,6 +1,6 @@
 openapi: 3.0.3
 info:
-  title: My API
+  title: Vacation Management API
   version: 1.0.0
 paths:
   /login:
@@ -52,8 +52,325 @@ paths:
           description: Success
         '400':
           description: Missing parameter
-        # TEMP guard demo (spec 4.2 §8 Q2) — reverted in 4.6 with the handler wrap
+
+  /requests:
+    post:
+      summary: Submit a new vacation request (Requester role required)
+      x-handler: handlers/requests#createRequest
+      x-inputParser: handlers/requests#parseCreateRequestInput
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [startDate, endDate]
+              properties:
+                startDate:
+                  type: string
+                  format: date
+                endDate:
+                  type: string
+                  format: date
+                reason:
+                  type: string
+                  nullable: true
+      responses:
+        '201':
+          description: Created — status set to Pending, VacationRequestCreatedEvent emitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationRequest'
+        '400':
+          description: Rule 1 (end before start) or Rule 4 (past date) violated, or malformed body/date
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
         '401':
           description: Missing or invalid token
         '403':
-          description: Requires Validator role
+          description: Caller does not hold the Requester role
+        '409':
+          description: Rule 2 — overlaps an existing Pending/Approved request for this user
+
+    get:
+      summary: Validator dashboard — all requests, paginated and filterable (Validator role required)
+      x-handler: handlers/requests#getDashboard
+      x-inputParser: handlers/requests#parseDashboardInput
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: query
+          name: status
+          required: false
+          schema:
+            type: string
+            enum: [Pending, Approved, Rejected]
+        - in: query
+          name: userId
+          required: false
+          schema:
+            type: string
+            format: uuid
+        - in: query
+          name: page
+          required: false
+          schema:
+            type: integer
+            default: 1
+        - in: query
+          name: limit
+          required: false
+          description: Values above 100 are clamped to 100 (spec 4.6 §8 Q4)
+          schema:
+            type: integer
+            default: 10
+      responses:
+        '200':
+          description: Paginated result set, sorted most-recently-submitted-first (A15); a page past the last result returns an empty data array (US-5)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/VacationRequest'
+                  total:
+                    type: integer
+                  page:
+                    type: integer
+                  limit:
+                    type: integer
+        '400':
+          description: Malformed query parameter (non-integer or < 1 page/limit, unknown status, non-uuid userId)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Caller does not hold the Validator role
+
+  /requests/mine:
+    get:
+      summary: List the authenticated user's own requests, unpaginated (Requester role required)
+      x-handler: handlers/requests#listMyRequests
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All of the caller's own requests, every status, scoped via JWT user_id (never a query param)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/VacationRequest'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Caller does not hold the Requester role
+
+  /requests/team:
+    get:
+      summary: Shared approved-only view across all employees (any authenticated role — A1, A14; month-grouping is the frontend's)
+      x-handler: handlers/requests#listTeamVacations
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Approved requests only; requester name + date range only, reason excluded (A14); sorted startDate ASC, id ASC (spec 4.6 §8 Q6)
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    requesterName:
+                      type: string
+                    startDate:
+                      type: string
+                      format: date
+                    endDate:
+                      type: string
+                      format: date
+        '401':
+          description: Missing or invalid token
+
+  /requests/:id/approve:
+    post:
+      summary: Approve a pending request (Validator role required)
+      x-handler: handlers/requests#approveRequest
+      x-inputParser: handlers/requests#parseRequestIdInput
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Approved — reviewed_by set to caller's user_id, VacationRequestApprovedEvent emitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationRequest'
+        '400':
+          description: Malformed id (not a uuid)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Caller does not hold the Validator role
+        '404':
+          description: No request with this id
+        '409':
+          description: Request is not in Pending status (assertPending, Rule 3 / ADR 0004)
+
+  /requests/:id/reject:
+    post:
+      summary: Reject a pending request with a required comment (Validator role required)
+      x-handler: handlers/requests#rejectRequest
+      x-inputParser: handlers/requests#parseRejectInput
+      security:
+        - bearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [comment]
+              properties:
+                comment:
+                  type: string
+      responses:
+        '200':
+          description: Rejected — comment stored, reviewed_by set, VacationRequestRejectedEvent emitted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VacationRequest'
+        '400':
+          description: Rule 5 — comment missing or empty after trim, malformed body, or malformed id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Caller does not hold the Validator role
+        '404':
+          description: No request with this id
+        '409':
+          description: Request is not in Pending status (assertPending, Rule 3 / ADR 0004)
+
+  /users:
+    get:
+      summary: List all users for the validator dashboard filter (Validator role required — A10)
+      x-handler: handlers/users#listUsers
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All users, id and display name only — no email, role, or credentials (A10); sorted name ASC
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserSummary'
+        '401':
+          description: Missing or invalid token
+        '403':
+          description: Caller does not hold the Validator role
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: >
+        Documents "a valid token is required" only. Role-specific enforcement
+        (Requester vs Validator vs any) is NOT expressible in OpenAPI's security
+        field — it's enforced by the requireRole() wrapper (ADR 0003), and stated
+        explicitly per-endpoint above instead.
+
+  schemas:
+    VacationRequest:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        startDate:
+          type: string
+          format: date
+        endDate:
+          type: string
+          format: date
+        reason:
+          type: string
+          nullable: true
+        status:
+          type: string
+          enum: [Pending, Approved, Rejected]
+        comments:
+          type: string
+          nullable: true
+        reviewedBy:
+          type: string
+          format: uuid
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+
+    UserSummary:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
