@@ -79,7 +79,7 @@ Rule per chunk: **branch `feat/<chunk-slug>` → `/spec <chunk>` → Q&A answere
 - [ ] 4.4 Domain commands + business-rule validation inside them (overlap check lives in `CreateVacationRequestCommand`)
 - [ ] 4.5 Domain events + at least one listener (structured logging on `VacationRequestApprovedEvent` — proves the pattern is real, not decorative) *(acceptance must require the listener's log line to appear — a wrong event class emits as a silent no-op, spec 4.3 §8 Q3)*
 - [ ] 4.6 REST endpoints ported into `root.yaml` (route + request/response schemas, spec 4.2 §9) + handlers: auth, create request, list mine, list all (validator), approve, reject — pagination on list-all; `npm run codegen` after every YAML edit; **revert 4.2's temp guard on `/hello/:name`** (requireRole wrap in `handlers/hello.ts` + the 401/403 entries in root.yaml — see spec 4.2 §8 Q9)
-- [ ] 4.7 Input validation + consistent error format (`{ error: { code, message } }` via `DomainError` → `toErrorResponse` — one shape everywhere)
+- [ ] 4.7 Input validation + consistent error format (`{ error: { code, message } }` via `DomainError` → `toErrorResponse` — one shape everywhere); `reason` normalization on create (`""` → `null`, trimming) — spec 4.4 §3 defers it here; error-message wording also owned here (spec 4.4 §9 adjudication 1 — messages carry zero contract weight)
 - [ ] 4.8 Frontend: auth flow (login page, token in Pinia store, route guards by role via `meta.requiresRole`)
 - [ ] 4.9 Requester UI: request form, my-requests list with statuses, shared team-vacations view (D1)
 - [ ] 4.10 Validator UI: dashboard, filter by status + user, pagination, approve action, reject action with **required comment**
@@ -103,7 +103,7 @@ Every rule: where enforced → unit test written → manually verified in UI.
 ## Phase 6 — Quality pass (AI-output audit)
  
 - [ ] Read every file top to bottom — I can explain every line out loud
-- [ ] Hunt AI failure modes: silent SDK error patterns (check every library's error contract), swallowed promises, `any` types, dead code, hallucinated CEF APIs (verify against actual README)
+- [ ] Hunt AI failure modes: silent SDK error patterns (check every library's error contract), swallowed promises, `any` types, dead code, hallucinated CEF APIs (verify against actual README), evaluation-timing on every module-level hoisted expression — a per-call value silently promoted to per-process is a bug even when the diff "is just organization" (spec 4.4 §9 adjudication 2; same class as 4.2's JWT-secret-at-call-time)
 - [ ] Enforceability pass: any prose rule in `.claude/rules/` that lint/tsc could enforce → migrate to lint config, demote prose to pointer (axios import ban, DataSource singleton, date util)
 - [ ] Pagination correctness: total count (count query, not `data.length`), page boundaries, empty page, stable ordering
 - [ ] Error paths: wrong password, expired token, requester hitting validator endpoint (403 not 500)
