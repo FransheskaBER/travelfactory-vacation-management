@@ -1,4 +1,3 @@
-import "reflect-metadata";
 import { loadEnv } from "commoneventframework";
 
 const envReady = loadEnv();
@@ -17,6 +16,7 @@ import {
 } from "commoneventframework";
 import { CommonEvent, LambdaEvent } from "commoneventframework/dist/types/commonEvent";
 import { HandlerFn, InputParserFn } from "./handlers/types";
+import { toErrorResponse } from "./errors/toErrorResponse";
 
 export const handler = async (
 	event: LambdaEvent,
@@ -30,7 +30,9 @@ export const handler = async (
 		const routeConfig = getRouteConfig(commonEvent);
 
 		if (!routeConfig || !routeConfig.handler) {
-			return new Response(404, { error: "Route not found" });
+			return new Response(404, {
+				error: { code: "ROUTE_NOT_FOUND", message: "Route not found" }
+			});
 		}
 
 		const handlerFn = resolveHandlerRef(routeConfig.handler) as HandlerFn | undefined;
@@ -39,7 +41,11 @@ export const handler = async (
 			: undefined;
 
 		if (!handlerFn) {
-			return new Response(500, { error: `Handler "${routeConfig.handler}" not found` });
+			// Detail goes to the log, never to the client — same policy as any
+			// other unexpected failure.
+			return toErrorResponse(
+				new Error(`Handler "${routeConfig.handler}" not found`)
+			);
 		}
 
 		const input = parserFn ? parserFn(commonEvent) : {};
@@ -52,8 +58,7 @@ export const handler = async (
 		}
 		return new Response(200, result as object);
 	} catch (err) {
-		console.error('handler error', err);
-		return new Response(500, err as object);
+		return toErrorResponse(err);
 	}
 };
 
