@@ -4,6 +4,8 @@ import { registerHandlerRefs } from "commoneventframework";
 
 import * as __cef_handlers_auth from "../handlers/auth";
 import * as __cef_handlers_hello from "../handlers/hello";
+import * as __cef_handlers_requests from "../handlers/requests";
+import * as __cef_handlers_users from "../handlers/users";
 
 export class HandlerRegistry {
 	static register(): void {
@@ -13,6 +15,17 @@ export class HandlerRegistry {
 			"handlers/hello#getHello": __cef_handlers_hello.getHello,
 			"handlers/hello#getHelloByName": __cef_handlers_hello.getHelloByName,
 			"handlers/hello#parseHelloByNameInput": __cef_handlers_hello.parseHelloByNameInput,
+			"handlers/requests#approveRequest": __cef_handlers_requests.approveRequest,
+			"handlers/requests#createRequest": __cef_handlers_requests.createRequest,
+			"handlers/requests#getDashboard": __cef_handlers_requests.getDashboard,
+			"handlers/requests#listMyRequests": __cef_handlers_requests.listMyRequests,
+			"handlers/requests#listTeamVacations": __cef_handlers_requests.listTeamVacations,
+			"handlers/requests#parseCreateRequestInput": __cef_handlers_requests.parseCreateRequestInput,
+			"handlers/requests#parseDashboardInput": __cef_handlers_requests.parseDashboardInput,
+			"handlers/requests#parseRejectInput": __cef_handlers_requests.parseRejectInput,
+			"handlers/requests#parseRequestIdInput": __cef_handlers_requests.parseRequestIdInput,
+			"handlers/requests#rejectRequest": __cef_handlers_requests.rejectRequest,
+			"handlers/users#listUsers": __cef_handlers_users.listUsers,
 		});
 	}
 }

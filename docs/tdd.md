@@ -146,7 +146,7 @@ Two foreign keys point at `User` for two different reasons — `user_id` (who su
 | Unique (auto) | `User.email` | Comes free with the `UNIQUE` constraint required for login lookup |
 | Composite | `VacationRequest(user_id, status)` | Serves `findOverlapping` directly; leading `user_id` also serves queries with no status filter. `status` alone rejected — only 3 distinct values, too low-cardinality to narrow a scan usefully |
 | None | `password`, `reason`, `comments`, `reviewed_by` | Never filtered or sorted on |
-| None | `created_at` | *Is* sorted on — every list endpoint orders by `created_at DESC` (A15) — but deliberately not indexed: at this project's row counts a sequential scan is cheaper than paying index maintenance on every insert. Revisit if list volume ever makes the sort measurable |
+| None | `created_at` | *Is* sorted on — activity lists (validator dashboard, my-requests) order by `created_at DESC` (A15); the team planning view orders by `startDate ASC, id ASC` (spec 4.6 §8 Q6 — a planning view is consumed chronologically) — but deliberately not indexed: at this project's row counts a sequential scan is cheaper than paying index maintenance on every insert. Revisit if list volume ever makes the sort measurable |
 
 ### State Machine — `VacationRequest.status`
 
@@ -268,6 +268,7 @@ JWT issued at login, encoding `user_id` and `role`. Role is read server-side fro
 | `GET /requests` (dashboard) | Validator |
 | `POST /requests/:id/approve` | Validator |
 | `POST /requests/:id/reject` | Validator |
+| `GET /users` | Validator (dashboard filter combobox, A10 — spec 4.6 §8 Q2) |
 
 ---
 
@@ -284,6 +285,7 @@ JWT issued at login, encoding `user_id` and `role`. Role is read server-side fro
 | GET | `/requests` | Validator dashboard — paginated, filterable by status/user | 200 | 401, 403 |
 | POST | `/requests/:id/approve` | Approve a pending request | 200 | 401, 403, 404, 409 |
 | POST | `/requests/:id/reject` | Reject a pending request, comment required | 200 | 400, 401, 403, 404, 409 |
+| GET | `/users` | Validator-only user list (id + name) for the dashboard filter combobox (A10) | 200 | 401, 403 |
 
 Error shape, consistent across every endpoint: `{ error: { code, message } }`.
 
