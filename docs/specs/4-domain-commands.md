@@ -322,3 +322,91 @@ logic that makes AC9 probe both `""` and `"   "`.
 
 ## 9. Implementation Results
 *(append-only during build)*
+
+**2026-07-28 — implemented, all §6 criteria verified against dockerized
+Postgres, freshly re-seeded (wipe-and-reseed) for deterministic state.
+Criteria 1–9 via throw-away scratch script (`backend/verify-4.4.ts` —
+constructed the real `TypeOrmVacationRequestRepository` from
+`cliDataSource`, executed every path, checked rows via SQL after each
+step; run, transcribed below, deleted — never committed). Script
+self-cleaned: deleted its 5 created rows, seed's 5 rows intact and
+unmutated.**
+
+- §6.1 ✓ — multi-day create (alice, +40..+44, reason "Conference
+  travel"): row `status=Pending`, `user_id=alice`, dates exact, reason
+  stored; returned entity carries id/status/timestamps without reload.
+  Single-day create (+50..+50, reason omitted): row `Pending`,
+  `reason=null`.
+- §6.2 ✓ — `endDate < startDate` → `ValidationError`/`INVALID_DATE_RANGE`,
+  row count unchanged (7 → 7).
+- §6.3 ✓ — yesterday-start → `ValidationError`/`START_DATE_IN_PAST`, no
+  row; `startDate == today` (bob, today..today) → created, `Pending` (A6).
+- §6.4 ✓ — all four minimum cases: boundary-day overlap vs own Pending
+  (new +25..+26 vs seed +21..+25 — A3's exact shape) →
+  `ConflictError`/`OVERLAPPING_REQUEST`, no row; overlap vs own
+  **Approved** (+44..+45 vs approved +40..+44) → same error — the
+  §8 Q10 mutant-killer, proving the blocking set isn't Pending-only;
+  same range as own Rejected (+14..+16) → created; identical range vs
+  another user's Approved (bob +40..+44 = alice's) → created.
+- §6.5 ✓ — approve (carla on alice's +40..+44): `status=Approved`,
+  `reviewed_by=carla`, `comments` still null, `updated_at` advanced
+  (checked against pre-approve value — the ORM-save-path proof).
+- §6.6 ✓ — reject with `"  Coverage gap that week.  "`: `status=Rejected`,
+  `comments="Coverage gap that week."` (**trimmed**), `reviewed_by=carla`,
+  `updated_at` advanced.
+- §6.7 ✓ — all four illegal combinations (approve/reject × Approved/
+  Rejected) → `ConflictError`/`REQUEST_NOT_PENDING`, row byte-identical
+  after each (full-row `row_to_json` snapshot compare).
+- §6.8 ✓ — approve and reject on a nonexistent uuid →
+  `NotFoundError`/`REQUEST_NOT_FOUND`.
+- §6.9 ✓ — reject with `""` and `"   "` →
+  `ValidationError`/`COMMENT_REQUIRED`, row snapshot unchanged, still
+  Pending.
+- §6.10 ✓ — grep over `src/domain/commands/` + `src/repositories/`: zero
+  matches for `eventDispatcher` / `emit(`.
+- §6.11 ✓ — grep: zero matches for `.query(` / `.update(` / `.insert(` /
+  `.delete(` in the new files; combined with §6.5/§6.6's advancing
+  `updated_at`, all writes ride the ORM save path.
+- §6.12 ✓ — `tsc --noEmit` and `npm run lint` pass; zero `any` (grep found
+  no matches even as a substring) and zero lint disables in the new files;
+  `git status`/`git diff` show `root.yaml` and
+  `src/generated/HandlerRegistry.ts` untouched.
+
+**Implementation notes (no deviations from §1–8):**
+- Files touched match §7's advisory list exactly — the six new source
+  files, nothing else.
+- `findOverlapping` uses `find()` with `In`/`LessThanOrEqual`/
+  `MoreThanOrEqual` operators — the §4 predicate expressed in TypeORM's
+  operator vocabulary, no QueryBuilder needed.
+- Scratch-script observation, zero relevance to the implementation: the
+  raw pg driver returns `date` columns as JS `Date` objects, unlike the
+  entity path's `'YYYY-MM-DD'` strings (spec 4.1 §5). Two script SQL
+  checks needed `::text` casts; commands never touch the raw driver, so
+  the taxonomy doesn't apply — noted only so a future scratch script
+  doesn't rediscover it.
+
+**2026-07-28 — /spec-check adjudications (human), both ⚠️ items accepted:**
+
+1. Error message strings — accepted as-is, 4.7 owns wording. Load-bearing
+   condition, stated so a future violation is catchable as one: messages
+   carry zero contract weight — no test, frontend branch, or doc may ever
+   match on message text; machine-readable behavior keys off `code` only
+   (§8 Q4's granularity exists for exactly this). A Phase 5 test asserting
+   a message string silently promotes it to contract — that is a
+   violation, not a style choice.
+
+2. `todayUtc` module-level helper — accepted as-is, but only after
+   verifying evaluation timing, which the "just organization" framing
+   hides: the arrow-function form (line 20, invoked per execute at line
+   39) computes "today" per call. The bare-constant form would have frozen
+   "today" at import — a real Rule 4 bug past midnight UTC (same class as
+   4.2's read-the-JWT-secret-at-call-time rule). The 4.1 shared-consts
+   precedent does not transfer: ENTITIES must evaluate once, "today" must
+   not — same refactor shape, opposite correctness condition. The standing
+   evaluation-timing check lives on the Phase 6 audit bullet (operative
+   home), not here.
+
+Recurrence note: both items are the 4.1 §9 pattern again — silent
+decisions that should have been pre-implementation questions. Two chunks
+running. If 4.5's audit surfaces a third batch, treat it as a documented
+trend requiring a process fix, not a coincidence.
