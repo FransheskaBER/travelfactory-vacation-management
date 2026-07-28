@@ -57,15 +57,17 @@ export const getDataSource = (): Promise<DataSource> => {
  * throws) so this promise can never reject at import time — a missing URL
  * surfaces as a connection error only when the CLI calls initialize().
  */
-export const cliDataSource: Promise<DataSource> = loadEnv().then(
-  () =>
-    new DataSource({
-      type: "postgres",
-      url: process.env.DATABASE_URL ?? "",
-      synchronize: false,
-      logging: true,
-      uuidExtension: UUID_EXTENSION,
-      entities: ENTITIES,
-      migrations: [InitialSchema1785239525809],
-    })
-);
+export const cliDataSource: Promise<DataSource> = loadEnv().then(() => {
+  if (!process.env.DATABASE_URL) {
+    console.warn("DATABASE_URL is not set — CLI commands will fail to connect");
+  }
+  return new DataSource({
+    type: "postgres",
+    url: process.env.DATABASE_URL ?? "",
+    synchronize: false,
+    logging: true,
+    uuidExtension: UUID_EXTENSION,
+    entities: ENTITIES,
+    migrations: [InitialSchema1785239525809],
+  });
+});
