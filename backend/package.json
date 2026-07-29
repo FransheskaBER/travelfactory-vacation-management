@@ -5,6 +5,7 @@
   "type": "commonjs",
   "scripts": {
     "codegen": "node scripts/codegen.js",
+    "test": "vitest run",
     "lint": "eslint src",
     "migration:generate": "typeorm-ts-node-commonjs migration:generate -d src/db/dataSource.ts",
     "migration:run": "typeorm-ts-node-commonjs migration:run -d src/db/dataSource.ts",
@@ -30,6 +31,7 @@
     "eslint": "^10.8.0",
     "ts-node": "^10.9.0",
     "typescript": "^5.0.0",
-    "typescript-eslint": "^8.65.0"
+    "typescript-eslint": "^8.65.0",
+    "vitest": "^4.1.10"
   }
 }
