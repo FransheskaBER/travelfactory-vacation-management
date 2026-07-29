@@ -1,3 +1,5 @@
+# HISTORICAL — superseded by backend/src/root.yaml as of spec 4.6.
+# Kept as a design artifact, not maintained (4.12 /login /logout changes not ported).
 openapi: 3.0.3
 info:
   title: Vacation Management API
