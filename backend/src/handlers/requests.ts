@@ -25,8 +25,12 @@ import {
   RejectVacationRequestInput,
 } from "../domain/commands/RejectVacationRequestCommand";
 import { commandBus } from "../domain/bus/CommandBus";
+import { normalizeReason } from "../lib/reason";
 
 // --- shared shape helpers (spec 4.6 §4, §8 Q7/Q8) ---
+
+// One bound for both free-text fields, matching varchar(500) (spec 4.7 §5).
+const MAX_FREE_TEXT = 500;
 
 // Strict YYYY-MM-DD: regex + round-trip rebuild. Never new Date(string) —
 // an invalid string yields Invalid Date → NaN → every downstream rule
@@ -85,8 +89,13 @@ export const parseCreateRequestInput: InputParserFn = (event: CommonEvent) => {
   if (reason !== undefined && reason !== null && typeof reason !== "string") {
     return errorResponse(400, "INVALID_INPUT", "reason must be a string when provided");
   }
-  // reason passes through as received — 4.7 owns normalization (spec 4.6 §5).
-  return { startDate, endDate, reason };
+  // Canonical form first, cap second: trailing whitespace never counts
+  // against the limit (spec 4.7 §4).
+  const normalizedReason = normalizeReason(reason);
+  if (normalizedReason !== null && normalizedReason.length > MAX_FREE_TEXT) {
+    return errorResponse(400, "INVALID_INPUT", `reason must be ${MAX_FREE_TEXT} characters or fewer`);
+  }
+  return { startDate, endDate, reason: normalizedReason };
 };
 
 export const createRequest: HandlerFn = requireRole(
@@ -239,7 +248,12 @@ export const parseRejectInput: InputParserFn = (event: CommonEvent) => {
   if (typeof comment !== "string") {
     return errorResponse(400, "INVALID_INPUT", "comment must be a string");
   }
-  // Trimmed-emptiness is the command's Rule 5, not shape (4.4 §8 Q7).
+  // Count-only trim: the cap ignores surrounding whitespace (spec 4.7 §8
+  // Q8). Trimmed-emptiness stays the command's Rule 5, not shape (4.4 §8
+  // Q7) — the command owns the trim that gets stored.
+  if (comment.trim().length > MAX_FREE_TEXT) {
+    return errorResponse(400, "INVALID_INPUT", `comment must be ${MAX_FREE_TEXT} characters or fewer`);
+  }
   return { id, comment };
 };
 

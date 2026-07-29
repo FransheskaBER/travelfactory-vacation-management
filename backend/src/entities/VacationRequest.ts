@@ -39,7 +39,7 @@ export class VacationRequest {
   @Column({ name: "end_date", type: "date" })
   endDate!: string;
 
-  @Column({ type: "varchar", nullable: true })
+  @Column({ type: "varchar", length: 500, nullable: true })
   reason!: string | null;
 
   @Column({
@@ -51,7 +51,7 @@ export class VacationRequest {
   status!: VacationRequestStatus;
 
   // Written only on rejection (A12).
-  @Column({ type: "varchar", nullable: true })
+  @Column({ type: "varchar", length: 500, nullable: true })
   comments!: string | null;
 
   // Who decided — deliberate extension of the assignment's schema (D11).
