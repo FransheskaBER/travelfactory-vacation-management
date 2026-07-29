@@ -98,6 +98,30 @@ cookie only flows on same-origin requests, because credentialed CORS forbids
 the wildcard origin CEF's dev server sends. Copy
 `frontend/.env.example` only to override the defaults.
 
+## Testing
+
+Unit suite — needs no running backend or database:
+
+```bash
+cd backend
+npm test
+```
+
+Expected: `23 passed | 10 skipped (33)`. The 10 skipped are functional tests
+over HTTP; they only run when `FUNCTIONAL_BASE_URL` is set, so a plain
+`npm test` never depends on a live server.
+
+Functional suite — with the backend running (`npm run dev`, port 8888) and
+the database seeded (`npm run seed`, both from Setup):
+
+```bash
+cd backend
+FUNCTIONAL_BASE_URL=http://localhost:8888 npm test
+```
+
+This runs all 33 tests. The functional run leaves one extra Approved request
+behind; `npm run seed` restores the pristine demo data.
+
 ## Demo credentials
 
 All seeded users share the password `Demo1234!`.
