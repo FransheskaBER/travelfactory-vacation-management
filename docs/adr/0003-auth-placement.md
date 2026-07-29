@@ -56,3 +56,4 @@ export const rejectRequest      = requireRole('Validator', async (input, event) 
 ## Amendments
 
 - **2026-07-28 (chunk 4.2):** Implemented per `docs/specs/2-auth.md`. Two refinements vs. the illustrative snippet above: error bodies use the project's `{ error: { code, message } }` envelope (D10), not the bare-string body shown; and `verifyJwt` returns a decoded payload or `null`, with the wrapper owning the 401/403 responses (the snippet's comment implied `verifyJwt` responded itself). The decision this ADR records is unchanged.
+- **2026-07-29 (httpOnly-cookie migration):** the wrapper's token *source* changed — `verifyJwt` now receives the JWT parsed from the `token` cookie (`src/auth/cookie.ts`) instead of the `Authorization: Bearer` header, cookie-only with no fallback. Wrapper placement, the parser-400 vs wrapper-401/403 split, and `actorId` injection are all unchanged — the decision this ADR records stands. Why the transport moved: ADR 0006.

@@ -59,3 +59,16 @@ onMounted(async () => {
 ## Related ADRs
 
 - Mirrors the same "centralize only when multiple consumers genuinely need it" principle ADR 0001 applies to backend persistence access (`findOverlapping` wrapped, trivial lookups not).
+
+## Amendment — 2026-07-29 (httpOnly-cookie migration)
+
+The auth store no longer holds the token. Since the migration
+(docs/specs/12-cookie-transport.md) the JWT lives in an httpOnly cookie the
+browser carries and JS cannot read; the store holds only the server-supplied
+session facts `{ role, userId, expiresAt }` from the login body. Everything
+above about Pinia as the single source of truth still stands — the *source*
+changed (login response body instead of a decoded token), not the pattern.
+The persistence plugin also stands: these values are not secrets, and
+tampering with them yields UI drift only — the backend's requireRole remains
+the enforcement boundary. The code sample above showing a `token` field is a
+point-in-time record of the pre-migration shape.

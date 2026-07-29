@@ -259,6 +259,8 @@ All three fire only after a successful commit. Listeners are downstream-only —
 
 JWT issued at login, encoding `user_id` and `role`. Role is read server-side from `users.role` at login time — never client-supplied, never selectable in the UI. Enforcement happens via a parameterized wrapper, `requireRole(role, handlerFn)`, applied around each domain handler at export time — not inside `inputParser`, since the parser's signature has no slot for "which role does this endpoint require" (full reasoning: `ADR 0003`).
 
+*Amended 2026-07-29:* the token's transport changed from the `Authorization: Bearer` header to an httpOnly `SameSite=Lax` cookie set at login and cleared by `POST /logout` — everything else in this section (issuance, server-side role sourcing, wrapper enforcement) is unchanged (`ADR 0006`, record: `docs/specs/12-cookie-transport.md`).
+
 | Endpoint | Required role |
 |---|---|
 | `POST /login` | none (public) |
@@ -278,7 +280,8 @@ JWT issued at login, encoding `user_id` and `role`. Role is read server-side fro
 
 | Method | Path | Description | Success | Errors |
 |---|---|---|---|---|
-| POST | `/login` | Authenticate, issue JWT | 200 | 401 |
+| POST | `/login` | Authenticate, issue JWT (httpOnly cookie; body carries `role`/`userId`/`expiresAt` — ADR 0006) | 200 | 401 |
+| POST | `/logout` | Clear the auth cookie — exists only because JS cannot delete an httpOnly cookie; unauthenticated, idempotent | 200 | — |
 | POST | `/requests` | Submit a vacation request | 201 | 400, 401, 403, 409 |
 | GET | `/requests/mine` | List own requests, unpaginated | 200 | 401, 403 |
 | GET | `/requests/team` | Approved-only shared view, grouped by month | 200 | 401 |
@@ -313,5 +316,6 @@ Unit tests never touch a real database; commands are tested against the fake rep
 | `0003-auth-placement.md` | Role-gating via `requireRole()` handler wrappers, not inside `inputParser` |
 | `0004-shared-pending-guard.md` | `assertPending()` extracted once, shared by Approve and Reject, vs. duplicating the check |
 | `0005-state-management.md` | Pinia for cross-cutting auth state; local component state for per-screen request lists |
+| `0006-token-transport.md` | JWT moved from localStorage + `Authorization` header to an httpOnly `SameSite=Lax` cookie — mid-project migration, localStorage was the shipped-then-rejected alternative |
 
 Related: `prd.md` (requirements), `assumptions.md` (resolved ambiguities, A1–A16).
