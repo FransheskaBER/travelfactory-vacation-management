@@ -32,7 +32,7 @@ export class CreateVacationRequestCommand
     if (input.endDate < input.startDate) {
       throw new ValidationError(
         "INVALID_DATE_RANGE",
-        "End date must not be before start date"
+        "endDate must not be before startDate"
       );
     }
 
@@ -41,7 +41,7 @@ export class CreateVacationRequestCommand
     if (input.startDate < todayUtc()) {
       throw new ValidationError(
         "START_DATE_IN_PAST",
-        "Start date must not be in the past"
+        "startDate must not be in the past"
       );
     }
 
