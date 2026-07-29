@@ -22,38 +22,20 @@ export class ApiError extends Error {
 }
 
 export const apiClient: AxiosInstance = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8888",
-  // Explicit: the JWT travels in the Authorization header, not a cookie (TDD §6).
-  // Keeping this false is what makes the backend's Access-Control-Allow-Origin: *
-  // legal — a credentialed request would require a specific origin instead.
-  withCredentials: false,
+  // "/api" is the Vite dev proxy prefix (vite.config.ts): requests stay
+  // same-origin, so the httpOnly auth cookie attaches automatically and CORS
+  // never enters — mandatory in dev, because the CEF dev server's preflight
+  // hardcodes Access-Control-Allow-Origin: *, which credentialed cross-origin
+  // requests forbid. No request interceptor: the browser carries the token.
+  baseURL: import.meta.env.VITE_API_BASE_URL ?? "/api",
   headers: { "Content-Type": "application/json" },
-});
-
-let readToken: () => string | null = () => null;
-
-/**
- * Supplies the JWT to the request interceptor without this module importing the
- * auth store — the store's login action calls this client, so a direct import
- * would be circular. Wired once at app startup.
- */
-export const setTokenProvider = (provider: () => string | null): void => {
-  readToken = provider;
-};
-
-apiClient.interceptors.request.use((config) => {
-  const token = readToken();
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
 });
 
 let onUnauthorized: () => void = () => {};
 
 /**
- * Session-expiry hook, wired once in main.ts (same inversion as
- * setTokenProvider — importing the store here would be circular). Fires only
+ * Session-expiry hook, wired once in main.ts (inversion because importing
+ * the store here would be circular, lint-banned). Fires only
  * on 401 UNAUTHORIZED: INVALID_CREDENTIALS is also a 401, but it means "wrong
  * password", which the login page renders — not a dead session (spec 4.8 §4).
  */
