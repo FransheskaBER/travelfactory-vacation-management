@@ -1,13 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref, watch } from "vue";
-import { ApiError } from "../api/client";
+import { ApiError, apiErrorMessage } from "../api/client";
 import { approveRequest, listDashboard, rejectRequest } from "../api/requests";
 import { listUsers } from "../api/users";
+import AppButton from "../components/AppButton.vue";
 import FormField from "../components/FormField.vue";
 import PaginationControls from "../components/PaginationControls.vue";
 import RequestTable from "../components/RequestTable.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import { formatDate } from "../utils/formatDate";
+import { formatDate, formatDateRange } from "../utils/formatDate";
 import type {
   DashboardResult,
   UserSummary,
@@ -57,8 +58,7 @@ onMounted(async () => {
     const [userList] = await Promise.all([listUsers(), fetchPage()]);
     users.value = userList;
   } catch (err) {
-    loadError.value =
-      err instanceof ApiError ? err.message : "Could not load the dashboard";
+    loadError.value = apiErrorMessage(err, "Could not load the dashboard");
   } finally {
     loading.value = false;
   }
@@ -91,8 +91,7 @@ const refetch = async (): Promise<void> => {
   try {
     await fetchPage();
   } catch (err) {
-    actionError.value =
-      err instanceof ApiError ? err.message : "Could not refresh the list";
+    actionError.value = apiErrorMessage(err, "Could not refresh the list");
   }
 };
 
@@ -147,9 +146,8 @@ const approve = async (row: VacationRequest): Promise<void> => {
     await approveRequest(row.id);
     await fetchPage();
   } catch (err) {
-    const apiError = err instanceof ApiError ? err : null;
-    actionError.value = apiError?.message ?? "Something went wrong — try again";
-    if (apiError?.status === 409) {
+    actionError.value = apiErrorMessage(err, "Something went wrong — try again");
+    if (err instanceof ApiError && err.status === 409) {
       await refetchAfterConflict();
     }
   } finally {
@@ -168,9 +166,8 @@ const submitReject = async (): Promise<void> => {
     await rejectRequest(rejectingId.value, rejectComment.value);
   } catch (err) {
     // Form stays open, value retained, message inside the detail row (§4).
-    const apiError = err instanceof ApiError ? err : null;
-    rejectError.value = apiError?.message ?? "Something went wrong — try again";
-    if (apiError?.status === 409) {
+    rejectError.value = apiErrorMessage(err, "Something went wrong — try again");
+    if (err instanceof ApiError && err.status === 409) {
       await refetchAfterConflict();
     }
     actionPending.value = false;
@@ -232,7 +229,7 @@ const columns: { key: keyof VacationRequest & string; label: string }[] = [
           {{ resolveName(row.userId) }}
         </template>
         <template #cell-startDate="{ row }">
-          {{ formatDate(row.startDate) }} – {{ formatDate(row.endDate) }}
+          {{ formatDateRange(row.startDate, row.endDate) }}
         </template>
         <template #cell-status="{ row }">
           <StatusBadge :status="row.status" />
@@ -249,20 +246,22 @@ const columns: { key: keyof VacationRequest & string; label: string }[] = [
                whose render is comment-nodes-only makes Vue fall back to the
                default cell, which would print the uuid (§6.3). -->
           <div v-if="row.status === 'Pending'" class="flex gap-2">
-            <button
-              class="rounded bg-emerald-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-600 disabled:opacity-50"
+            <AppButton
+              variant="success"
+              size="sm"
               :disabled="actionPending"
               @click="approve(row)"
             >
               Approve
-            </button>
-            <button
-              class="rounded bg-red-700 px-3 py-1.5 text-xs font-medium text-white hover:bg-red-600 disabled:opacity-50"
+            </AppButton>
+            <AppButton
+              variant="danger"
+              size="sm"
               :disabled="actionPending"
               @click="openReject(row)"
             >
               Reject
-            </button>
+            </AppButton>
           </div>
           <span v-else></span>
         </template>
@@ -278,20 +277,12 @@ const columns: { key: keyof VacationRequest & string; label: string }[] = [
             />
             <p v-if="rejectError" class="mb-4 text-sm text-red-600">{{ rejectError }}</p>
             <div class="flex gap-2">
-              <button
-                type="submit"
-                :disabled="actionPending"
-                class="rounded bg-red-700 px-4 py-2 text-sm font-medium text-white hover:bg-red-600 disabled:opacity-50"
-              >
+              <AppButton type="submit" variant="danger" :disabled="actionPending">
                 Confirm rejection
-              </button>
-              <button
-                type="button"
-                class="rounded border border-slate-300 bg-white px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50"
-                @click="closeReject"
-              >
+              </AppButton>
+              <AppButton variant="secondary" @click="closeReject">
                 Cancel
-              </button>
+              </AppButton>
             </div>
           </form>
         </template>

@@ -16,11 +16,12 @@ const props = defineProps<{
   id: string;
   label: string;
   modelValue: string;
-  type?: "text" | "date" | "textarea" | "select" | "combobox";
+  type?: "text" | "date" | "textarea" | "select" | "combobox" | "email" | "password";
   options?: Option[];
   maxlength?: number;
   min?: string;
   required?: boolean;
+  autocomplete?: string;
 }>();
 
 const emit = defineEmits<{ "update:modelValue": [value: string] }>();
@@ -130,6 +131,7 @@ const selectOption = (option: Option): void => {
       :maxlength="maxlength"
       :min="min"
       :required="required"
+      :autocomplete="autocomplete"
       class="w-full rounded border border-slate-300 px-3 py-2 text-sm focus:border-slate-500 focus:outline-none"
       @input="onInput"
     />

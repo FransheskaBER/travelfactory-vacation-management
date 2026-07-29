@@ -47,9 +47,9 @@ paths:
 
 ## Reusable components (assignment requirement — treat as hard)
 - Shared UI lives in src/components/: StatusBadge, RequestTable,
-  PaginationControls, FormField
-- If markup for statuses, tables, pagination, or form fields appears
-  in a page component, extract it — duplicated markup between the two
-  interfaces is a rejected diff
+  PaginationControls, FormField, AppButton (added by 4.11's audit)
+- If markup for statuses, tables, pagination, buttons, or form fields
+  appears in a page component, extract it — duplicated markup between
+  the two interfaces is a rejected diff
 - Tailwind: utility classes in templates; repeated class clusters are
   a signal to extract a component, not to write @apply soup
