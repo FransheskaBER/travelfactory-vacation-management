@@ -11,6 +11,7 @@ export class HandlerRegistry {
 	static register(): void {
 		registerHandlerRefs({
 			"handlers/auth#login": __cef_handlers_auth.login,
+			"handlers/auth#logout": __cef_handlers_auth.logout,
 			"handlers/auth#parseLoginInput": __cef_handlers_auth.parseLoginInput,
 			"handlers/hello#getHello": __cef_handlers_hello.getHello,
 			"handlers/hello#getHelloByName": __cef_handlers_hello.getHelloByName,

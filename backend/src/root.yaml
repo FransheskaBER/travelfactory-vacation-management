@@ -7,7 +7,7 @@ paths:
     post:
       x-handler: handlers/auth#login
       x-inputParser: handlers/auth#parseLoginInput
-      summary: Authenticate with email + password, returns a JWT
+      summary: Authenticate with email + password; the JWT is issued as an httpOnly cookie, never in the body
       requestBody:
         required: true
         content:
@@ -22,11 +22,43 @@ paths:
                   type: string
       responses:
         '200':
-          description: JWT issued
+          description: >
+            JWT issued via Set-Cookie (token=<jwt>; HttpOnly; SameSite=Lax;
+            Path=/; Max-Age=86400; Secure when COOKIE_SECURE=true). The body
+            carries the session facts the client can no longer decode from the
+            token itself; expiresAt is epoch ms, feeding the frontend's
+            proactive expiry check.
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  role:
+                    type: string
+                    enum: [Requester, Validator]
+                  userId:
+                    type: string
+                    format: uuid
+                  expiresAt:
+                    type: integer
+                    format: int64
         '400':
           description: Malformed input
         '401':
           description: Invalid credentials
+
+  /logout:
+    post:
+      x-handler: handlers/auth#logout
+      summary: >
+        Clears the auth cookie. This endpoint exists only because JS cannot
+        delete an httpOnly cookie — it inverts spec 4.8 §8 Q5's "no /logout
+        URL" decision, which assumed a client-readable token. Deliberately
+        unauthenticated and idempotent: always 200, even with no or an
+        expired session — a logout that can fail is hostile UX.
+      responses:
+        '200':
+          description: Set-Cookie with Max-Age=0 deletes the token cookie; empty object body
 
   /hello:
     get:
@@ -59,7 +91,7 @@ paths:
       x-handler: handlers/requests#createRequest
       x-inputParser: handlers/requests#parseCreateRequestInput
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       requestBody:
         required: true
         content:
@@ -102,7 +134,7 @@ paths:
       x-handler: handlers/requests#getDashboard
       x-inputParser: handlers/requests#parseDashboardInput
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: query
           name: status
@@ -163,7 +195,7 @@ paths:
       summary: List the authenticated user's own requests, unpaginated (Requester role required)
       x-handler: handlers/requests#listMyRequests
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       responses:
         '200':
           description: All of the caller's own requests, every status, scoped via JWT user_id (never a query param)
@@ -183,7 +215,7 @@ paths:
       summary: Shared approved-only view across all employees (any authenticated role — A1, A14; month-grouping is the frontend's)
       x-handler: handlers/requests#listTeamVacations
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       responses:
         '200':
           description: Approved requests only; requester name + date range only, reason excluded (A14); sorted startDate ASC, id ASC (spec 4.6 §8 Q6)
@@ -211,7 +243,7 @@ paths:
       x-handler: handlers/requests#approveRequest
       x-inputParser: handlers/requests#parseRequestIdInput
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -247,7 +279,7 @@ paths:
       x-handler: handlers/requests#rejectRequest
       x-inputParser: handlers/requests#parseRejectInput
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       parameters:
         - in: path
           name: id
@@ -292,7 +324,7 @@ paths:
       summary: List all users for the validator dashboard filter (Validator role required — A10)
       x-handler: handlers/users#listUsers
       security:
-        - bearerAuth: []
+        - cookieAuth: []
       responses:
         '200':
           description: All users, id and display name only — no email, role, or credentials (A10); sorted name ASC
@@ -309,14 +341,16 @@ paths:
 
 components:
   securitySchemes:
-    bearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: token
       description: >
-        Documents "a valid token is required" only. Role-specific enforcement
-        (Requester vs Validator vs any) is NOT expressible in OpenAPI's security
-        field — it's enforced by the requireRole() wrapper (ADR 0003), and stated
+        JWT carried in an httpOnly cookie (cookie-only — the former
+        Authorization: Bearer surface is retired). Documents "a valid token
+        is required" only. Role-specific enforcement (Requester vs Validator
+        vs any) is NOT expressible in OpenAPI's security field — it's
+        enforced by the requireRole() wrapper (ADR 0003), and stated
         explicitly per-endpoint above instead.
 
   schemas:

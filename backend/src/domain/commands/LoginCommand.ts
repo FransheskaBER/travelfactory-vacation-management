@@ -1,6 +1,6 @@
 import * as bcrypt from "bcrypt";
 import { UnauthorizedError } from "../../errors/DomainError";
-import { User } from "../../entities/User";
+import { User, UserRole } from "../../entities/User";
 import { signJwt } from "../../auth/jwt";
 
 // Injected as a typed function, not a repository port — no business-concept
@@ -11,6 +11,19 @@ export type FindUserByEmail = (email: string) => Promise<User | null>;
 export interface LoginInput {
   email: string;
   password: string;
+}
+
+/**
+ * Everything a successful login yields. The token is transport material (the
+ * handler moves it into an httpOnly Set-Cookie); role/userId/expiresAt are
+ * the response body — the client can no longer decode the token, so the
+ * server must hand these facts over explicitly (migration brief §3.1).
+ */
+export interface LoginResult {
+  token: string;
+  role: UserRole;
+  userId: string;
+  expiresAt: number;
 }
 
 // Pre-generated bcrypt hash at D7's cost factor (10) — must match the seed
@@ -27,7 +40,7 @@ const invalidCredentials = (): UnauthorizedError =>
 export class LoginCommand {
   constructor(private readonly deps: { findUserByEmail: FindUserByEmail }) {}
 
-  async execute(input: LoginInput): Promise<{ token: string }> {
+  async execute(input: LoginInput): Promise<LoginResult> {
     const user = await this.deps.findUserByEmail(input.email);
 
     if (!user) {
@@ -40,6 +53,12 @@ export class LoginCommand {
     const matches = await bcrypt.compare(input.password, user.password);
     if (!matches) throw invalidCredentials();
 
-    return { token: signJwt({ userId: user.id, role: user.role }) };
+    const issued = signJwt({ userId: user.id, role: user.role });
+    return {
+      token: issued.token,
+      role: user.role,
+      userId: user.id,
+      expiresAt: issued.expiresAt,
+    };
   }
 }
