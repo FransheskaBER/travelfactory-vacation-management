@@ -7,6 +7,10 @@
 // (slots, not render callbacks — rules/frontend.md); the default cell
 // renders the row value as text. Which columns exist is the consumer's
 // call — the team view's `reason` exclusion is config, not a fork (A14).
+// 4.10 extension (spec 4.10 §5, §8 Q1): the optional `expandedKey` names
+// the row whose `#row-detail` slot renders as a full-width row beneath
+// it — the dashboard's inline reject form. Both additions are optional;
+// 4.9 consumers are untouched.
 interface Column {
   key: keyof Row & string;
   label: string;
@@ -17,6 +21,7 @@ defineProps<{
   columns: Column[];
   rowKey: keyof Row & string;
   emptyText: string;
+  expandedKey?: string | null;
 }>();
 
 // Types the `row` prop of every #cell-<key> scoped slot for consumers —
@@ -40,15 +45,21 @@ const cellText = (row: Row, key: keyof Row & string): string => {
         </tr>
       </thead>
       <tbody>
-        <tr
-          v-for="row in rows"
-          :key="String(row[rowKey])"
-          class="border-t border-slate-100"
-        >
-          <td v-for="col in columns" :key="col.key" class="px-4 py-3 align-top text-slate-700">
-            <slot :name="`cell-${col.key}`" :row="row">{{ cellText(row, col.key) }}</slot>
-          </td>
-        </tr>
+        <template v-for="row in rows" :key="String(row[rowKey])">
+          <tr class="border-t border-slate-100">
+            <td v-for="col in columns" :key="col.key" class="px-4 py-3 align-top text-slate-700">
+              <slot :name="`cell-${col.key}`" :row="row">{{ cellText(row, col.key) }}</slot>
+            </td>
+          </tr>
+          <tr
+            v-if="expandedKey != null && String(row[rowKey]) === expandedKey"
+            class="border-t border-slate-100 bg-slate-50"
+          >
+            <td :colspan="columns.length" class="px-4 py-4">
+              <slot name="row-detail" :row="row"></slot>
+            </td>
+          </tr>
+        </template>
         <tr v-if="rows.length === 0" class="border-t border-slate-100">
           <td :colspan="columns.length" class="px-4 py-6 text-center text-slate-400">
             {{ emptyText }}

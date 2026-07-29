@@ -29,3 +29,21 @@ export interface TeamVacation {
   startDate: string;
   endDate: string;
 }
+
+/** GET /users element — id + name only, the privacy boundary (A10). */
+export interface UserSummary {
+  id: string;
+  name: string;
+}
+
+/**
+ * GET /requests envelope (root.yaml). `total` is the post-filter count;
+ * `limit` echoes the server's page size — the client renders page math
+ * from these fields, never from a hardcoded 10 (spec 4.10 §4).
+ */
+export interface DashboardResult {
+  data: VacationRequest[];
+  total: number;
+  page: number;
+  limit: number;
+}
