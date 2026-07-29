@@ -18,21 +18,28 @@ paths:
   ad hoc in components.
 
 ## State & auth
+- Auth transport is an httpOnly cookie (ADR 0006, spec 12): the browser
+  carries the JWT, JS never sees it. There is no token code anywhere in
+  the frontend — no decode, no storage, no header attachment.
 - Pinia auth store (src/stores/auth.ts) is the single source of truth
-  for token, user, role. Components and router guards read the store.
+  for the session facts { role, userId, expiresAt } from the login
+  body. Components and router guards read the store.
   (localStorage outside src/stores/ is banned by lint — pointer.)
-- The store supplies the token to the API layer via
-  setTokenProvider(() => ...) wired once in main.ts. (client.ts
-  importing a store — a circular dependency — is banned by lint,
-  scoped to that file — pointer.)
+- Session expiry has two halves (spec 4.8 §4, refed by the migration):
+  proactive — the guard runs store.syncSession() before every
+  navigation; reactive — client.ts's setUnauthorizedHandler, wired once
+  in main.ts, fires on 401 UNAUTHORIZED only. (client.ts importing a
+  store — a circular dependency — is banned by lint, scoped to that
+  file — pointer.)
 - Route guards: routes declare meta: { requiresRole: "Validator" };
   one global beforeEach enforces it. No per-component role checks.
 
 ## API layer
 - src/api/client.ts already exists — extend it, don't rewrite it. One
-  axios instance: baseURL from VITE_API_BASE_URL, request interceptor
-  attaches the token, response interceptor maps { error: { code,
-  message } } into the typed ApiError class
+  axios instance: baseURL from VITE_API_BASE_URL (defaults to /api, the
+  mandatory Vite dev proxy — spec 12); no request interceptor, the
+  browser attaches the cookie; response interceptor maps { error:
+  { code, message } } into the typed ApiError class
 - Components call functions from src/api/*.ts. (Direct axios imports
   and fetch outside src/api/ are banned by lint — pointer.)
 - Callers catch ApiError (status, code, message) — never dig through
