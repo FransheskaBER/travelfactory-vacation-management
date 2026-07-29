@@ -17,7 +17,7 @@ declare module "vue-router" {
  */
 const landingRedirect = (): string => {
   const auth = useAuthStore();
-  auth.syncFromToken();
+  auth.syncSession();
   return auth.isAuthenticated && auth.role ? roleHome(auth.role) : "/login";
 };
 
@@ -56,10 +56,10 @@ export const router = createRouter({
 // requireRole wrapper is the real enforcement (ADR 0003).
 router.beforeEach((to) => {
   const auth = useAuthStore();
-  // Fresh decode before every check: drops expired/undecodable sessions
-  // proactively (spec 4.8 §4) — see syncFromToken for why the getter alone
-  // can't do this.
-  auth.syncFromToken();
+  // Fresh clock check before every navigation: drops expired sessions
+  // proactively (spec 4.8 §4, fed by expiresAt since the cookie migration) —
+  // see syncSession for why the getter alone can't do this.
+  auth.syncSession();
 
   const required = to.meta.requiresRole;
 

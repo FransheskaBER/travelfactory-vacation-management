@@ -1,82 +1,84 @@
 import { defineStore } from "pinia";
-import { jwtDecode } from "jwt-decode";
-import { login as apiLogin } from "../api/auth";
+import { login as apiLogin, logout as apiLogout, type SessionInfo } from "../api/auth";
 import type { Role } from "../types";
 
 /**
- * Structural mirror of the backend's JwtPayload (spec 4.2 §5) plus the `exp`
- * claim jsonwebtoken adds — duplicated by design, no shared package exists
- * between the two workspaces (spec 4.8 §4).
+ * Since the httpOnly-cookie migration the token never reaches JS: the browser
+ * holds it, and the store holds only the server-supplied session facts from
+ * the login body. Tampering with these persisted values yields UI drift only
+ * — the backend's requireRole is the enforcement (same boundary 4.8 §2 drew).
  */
-interface JwtPayload {
-  userId: string;
-  role: Role;
-  exp: number;
-}
-
 interface AuthState {
-  token: string | null;
   role: Role | null;
   userId: string | null;
+  /** Epoch ms, server-supplied. Replaces 4.8's decode-per-check design: an
+   * httpOnly token can't be decoded, so expiry must live in state. */
+  expiresAt: number | null;
 }
 
-/**
- * Decodes and validates in one step: null for an absent, undecodable, or
- * expired token — the three cases spec 4.8 §4 treats identically. `exp` is
- * never stored; it is read off the token on every call, so the token stays
- * the single source of truth.
- */
-const readValidPayload = (token: string | null): JwtPayload | null => {
-  if (!token) return null;
-  try {
-    const payload = jwtDecode<JwtPayload>(token);
-    return payload.exp * 1000 > Date.now() ? payload : null;
-  } catch {
-    return null;
-  }
-};
-
 export const useAuthStore = defineStore("auth", {
-  state: (): AuthState => ({ token: null, role: null, userId: null }),
+  state: (): AuthState => ({ role: null, userId: null, expiresAt: null }),
   getters: {
-    isAuthenticated: (state): boolean => readValidPayload(state.token) !== null,
+    isAuthenticated: (state): boolean =>
+      state.role !== null &&
+      state.expiresAt !== null &&
+      state.expiresAt > Date.now(),
   },
   actions: {
     /** Throws ApiError (wrong credentials, network) — the login page renders it. */
     async login(email: string, password: string): Promise<void> {
-      const token = await apiLogin(email, password);
-      const payload = readValidPayload(token);
-      if (!payload) {
-        throw new Error("Received an unreadable token — backend and frontend disagree on the JWT format");
-      }
-      this.token = token;
-      this.role = payload.role;
-      this.userId = payload.userId;
+      const session: SessionInfo = await apiLogin(email, password);
+      this.role = session.role;
+      this.userId = session.userId;
+      this.expiresAt = session.expiresAt;
     },
 
-    logout(): void {
-      this.token = null;
+    /** Local-only reset — the reactive 401 path and expiry sync use this
+     * directly: the server already considers the session dead, so there is
+     * nothing to tell it. */
+    clearSession(): void {
       this.role = null;
       this.userId = null;
+      this.expiresAt = null;
     },
 
     /**
-     * Guard hook, run before every navigation: clears state when the persisted
-     * token no longer yields a valid payload (expiry and decode failure — spec
-     * 4.8 §4), and re-derives role/userId from it when it does. The fresh
-     * decode here, not the cached getter, is what makes the proactive check
-     * true per-navigation: a computed only re-evaluates when the token
-     * *changes*, and expiry is a change in time, not in state.
+     * Deliberate logout: ask the backend to delete the httpOnly cookie (JS
+     * can't), then clear locally regardless of the outcome — an offline
+     * logout must still log you out on this device (migration Q&A; the
+     * cookie then dies on its own at Max-Age).
      */
-    syncFromToken(): void {
-      const payload = readValidPayload(this.token);
-      if (payload) {
-        this.role = payload.role;
-        this.userId = payload.userId;
-      } else if (this.token) {
-        this.logout();
+    async logout(): Promise<void> {
+      try {
+        await apiLogout();
+      } catch {
+        // Swallowed by decision: local logout must not depend on the network.
+      }
+      this.clearSession();
+    },
+
+    /**
+     * Guard hook, run before every navigation — the proactive half of expiry
+     * handling (4.8 §4's two-halves design, now fed by expiresAt instead of a
+     * decoded exp). The explicit clock check here, not the getter, is what
+     * catches expiry: a cached getter only re-evaluates when state changes,
+     * and expiry is a change in time, not in state.
+     */
+    syncSession(): void {
+      if (this.expiresAt !== null && this.expiresAt <= Date.now()) {
+        this.clearSession();
       }
     },
   },
-  persist: true,
+  persist: {
+    // pick: the 4.8 build persisted the raw token; these three keys are the
+    // whole persisted surface now, so a stale token can never be re-written.
+    pick: ["role", "userId", "expiresAt"],
+    // afterHydrate: rewrite storage immediately so the stale token key from a
+    // 4.8-era localStorage is purged at startup, not at the next state change
+    // (acceptance criterion: localStorage contains no token anywhere).
+    afterHydrate: (context) => {
+      context.store.$persist();
+    },
+  },
 });

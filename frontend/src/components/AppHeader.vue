@@ -6,7 +6,9 @@ const auth = useAuthStore();
 const router = useRouter();
 
 const logout = async (): Promise<void> => {
-  auth.logout();
+  // Resolves even if the network call fails — the store clears local state
+  // regardless, so this device always lands logged-out on /login.
+  await auth.logout();
   await router.push("/login");
 };
 </script>
