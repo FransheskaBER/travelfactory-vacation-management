@@ -6,7 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
   </head>
-  <body>
+  <!-- min-h-screen + bg-slate-50: the body's background propagates to the
+       whole browser canvas, so pages don't sit on a dark canvas in
+       dark-mode browsers. scheme-light: the app renders light-only —
+       keeps native controls (date pickers) from dark-theming. -->
+  <body class="min-h-screen bg-slate-50 scheme-light">
     <div id="app"></div>
     <script type="module" src="/src/main.ts"></script>
   </body>

@@ -8,6 +8,9 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [vue(), tailwindcss()],
     server: {
+      // Honor an assigned dev port (e.g. launch.json autoPort) — Vite does
+      // not read PORT on its own. Cookie + proxy behavior is port-agnostic.
+      port: process.env.PORT ? Number(process.env.PORT) : 5173,
       // Mandatory since the httpOnly-cookie migration, not a convenience:
       // credentialed requests forbid Access-Control-Allow-Origin: *, and the
       // CEF dev server's preflight hardcodes exactly that (verified in
