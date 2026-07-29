@@ -2,6 +2,7 @@ import { HandlerFn } from "../handlers/types";
 import { errorResponse } from "../errors/toErrorResponse";
 import { UserRole } from "../entities/User";
 import { verifyJwt } from "./jwt";
+import { readTokenFromCookie } from "./cookie";
 
 /**
  * Authorization wrapper applied at export time around each protected domain
@@ -14,9 +15,11 @@ import { verifyJwt } from "./jwt";
 export const requireRole =
   (role: UserRole | "any", fn: HandlerFn): HandlerFn =>
   async (input, event) => {
+    // Cookie-only since the httpOnly migration — no Authorization fallback,
+    // so the old XSS-relevant surface is fully retired (migration Q&A 1).
     // Node and API Gateway v2 lowercase header names; v1 may not.
     const decoded = verifyJwt(
-      event.headers?.authorization ?? event.headers?.Authorization
+      readTokenFromCookie(event.headers?.cookie ?? event.headers?.Cookie)
     );
     if (!decoded) {
       return errorResponse(401, "UNAUTHORIZED", "Missing or invalid token");
