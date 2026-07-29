@@ -60,31 +60,6 @@ paths:
         '200':
           description: Set-Cookie with Max-Age=0 deletes the token cookie; empty object body
 
-  /hello:
-    get:
-      x-handler: handlers/hello#getHello
-      summary: Returns a welcome message
-      responses:
-        '200':
-          description: Success
-
-  /hello/:name:
-    get:
-      x-handler: handlers/hello#getHelloByName
-      x-inputParser: handlers/hello#parseHelloByNameInput
-      summary: Returns a personalized welcome message
-      parameters:
-        - in: path
-          name: name
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Success
-        '400':
-          description: Missing parameter
-
   /requests:
     post:
       summary: Submit a new vacation request (Requester role required)

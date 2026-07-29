@@ -3,7 +3,6 @@
 import { registerHandlerRefs } from "commoneventframework";
 
 import * as __cef_handlers_auth from "../handlers/auth";
-import * as __cef_handlers_hello from "../handlers/hello";
 import * as __cef_handlers_requests from "../handlers/requests";
 import * as __cef_handlers_users from "../handlers/users";
 
@@ -13,9 +12,6 @@ export class HandlerRegistry {
 			"handlers/auth#login": __cef_handlers_auth.login,
 			"handlers/auth#logout": __cef_handlers_auth.logout,
 			"handlers/auth#parseLoginInput": __cef_handlers_auth.parseLoginInput,
-			"handlers/hello#getHello": __cef_handlers_hello.getHello,
-			"handlers/hello#getHelloByName": __cef_handlers_hello.getHelloByName,
-			"handlers/hello#parseHelloByNameInput": __cef_handlers_hello.parseHelloByNameInput,
 			"handlers/requests#approveRequest": __cef_handlers_requests.approveRequest,
 			"handlers/requests#createRequest": __cef_handlers_requests.createRequest,
 			"handlers/requests#getDashboard": __cef_handlers_requests.getDashboard,
