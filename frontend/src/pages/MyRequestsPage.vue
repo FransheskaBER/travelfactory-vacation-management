@@ -1,11 +1,12 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { ApiError } from "../api/client";
+import { apiErrorMessage } from "../api/client";
 import { createRequest, listMyRequests } from "../api/requests";
+import AppButton from "../components/AppButton.vue";
 import FormField from "../components/FormField.vue";
 import RequestTable from "../components/RequestTable.vue";
 import StatusBadge from "../components/StatusBadge.vue";
-import { formatDate } from "../utils/formatDate";
+import { formatDate, formatDateRange } from "../utils/formatDate";
 import type { VacationRequest } from "../types";
 
 // Local list state per ADR 0005: fetched on mount, refetched after a
@@ -21,8 +22,7 @@ const load = async (): Promise<void> => {
   try {
     requests.value = await listMyRequests();
   } catch (err) {
-    loadError.value =
-      err instanceof ApiError ? err.message : "Could not load your requests";
+    loadError.value = apiErrorMessage(err, "Could not load your requests");
   } finally {
     loading.value = false;
   }
@@ -74,8 +74,7 @@ const submit = async (): Promise<void> => {
   } catch (err) {
     // Card stays open, values retained (spec 4.9 §4) — the envelope
     // message is the contract's wording (4.8 login pattern).
-    submitError.value =
-      err instanceof ApiError ? err.message : "Something went wrong — try again";
+    submitError.value = apiErrorMessage(err, "Something went wrong — try again");
   } finally {
     submitting.value = false;
   }
@@ -94,12 +93,9 @@ const columns: { key: keyof VacationRequest & string; label: string }[] = [
   <main class="mx-auto max-w-4xl p-8">
     <div class="mb-6 flex items-center justify-between">
       <h1 class="text-xl font-semibold text-slate-800">My Requests</h1>
-      <button
-        class="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
-        @click="toggleForm"
-      >
+      <AppButton @click="toggleForm">
         {{ formOpen ? "Cancel" : "New request" }}
-      </button>
+      </AppButton>
     </div>
 
     <form
@@ -132,13 +128,9 @@ const columns: { key: keyof VacationRequest & string; label: string }[] = [
         :maxlength="500"
       />
       <p v-if="submitError" class="mb-4 text-sm text-red-600">{{ submitError }}</p>
-      <button
-        type="submit"
-        :disabled="submitting"
-        class="rounded bg-slate-800 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700 disabled:opacity-50"
-      >
+      <AppButton type="submit" :disabled="submitting">
         {{ submitting ? "Submitting…" : "Submit request" }}
-      </button>
+      </AppButton>
     </form>
 
     <p v-if="loading" class="text-sm text-slate-500">Loading your requests…</p>
@@ -151,7 +143,7 @@ const columns: { key: keyof VacationRequest & string; label: string }[] = [
       empty-text="No requests yet — submit your first one above."
     >
       <template #cell-startDate="{ row }">
-        {{ formatDate(row.startDate) }} – {{ formatDate(row.endDate) }}
+        {{ formatDateRange(row.startDate, row.endDate) }}
       </template>
       <template #cell-status="{ row }">
         <StatusBadge :status="row.status" />

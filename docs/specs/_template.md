@@ -68,6 +68,13 @@ generating action — never listed here, never flagged as unspecified.
 ## 8. Q&A
 Questions raised before approval, with answers. Ambiguity surfaces here,
 before code exists — an unanswered question blocks approval.
+When the chunk's scope originates from an enumerated source (a directive
+listing items, a checklist line naming deliverables), §8 must disposition
+**every** enumerated item IN or OUT by name. A wrong ruling is caught at
+approval; a missing one is invisible — nothing flags an item that simply
+never appears. (Added after 4.11 v1 silently dropped the ApiError helper:
+its §4 definition covered markup only, so an item with no rule to hook
+fell through without a trace — spec 11 §8 Q8.)
 
 ## 9. Implementation Results
 Append-only during build: deviations from §1–8 and why, unpredicted

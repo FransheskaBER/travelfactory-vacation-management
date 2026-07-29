@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from "vue";
-import { ApiError } from "../api/client";
+import { apiErrorMessage } from "../api/client";
 import { listTeamVacations } from "../api/requests";
 import RequestTable from "../components/RequestTable.vue";
-import { formatDate, formatMonth } from "../utils/formatDate";
+import { formatDateRange, formatMonth } from "../utils/formatDate";
 import type { TeamVacation } from "../types";
 
 const vacations = ref<TeamVacation[]>([]);
@@ -14,8 +14,7 @@ onMounted(async () => {
   try {
     vacations.value = await listTeamVacations();
   } catch (err) {
-    loadError.value =
-      err instanceof ApiError ? err.message : "Could not load team vacations";
+    loadError.value = apiErrorMessage(err, "Could not load team vacations");
   } finally {
     loading.value = false;
   }
@@ -80,7 +79,7 @@ const columns: { key: keyof KeyedVacation & string; label: string }[] = [
         empty-text="No vacations this month."
       >
         <template #cell-startDate="{ row }">
-          {{ formatDate(row.startDate) }} – {{ formatDate(row.endDate) }}
+          {{ formatDateRange(row.startDate, row.endDate) }}
         </template>
       </RequestTable>
     </section>

@@ -21,6 +21,13 @@ export class ApiError extends Error {
   }
 }
 
+/**
+ * The one place a caught error becomes display text (spec 4.11 §8 Q8):
+ * ApiError → its envelope message, anything else → the caller's fallback.
+ */
+export const apiErrorMessage = (err: unknown, fallback: string): string =>
+  err instanceof ApiError ? err.message : fallback;
+
 export const apiClient: AxiosInstance = axios.create({
   // "/api" is the Vite dev proxy prefix (vite.config.ts): requests stay
   // same-origin, so the httpOnly auth cookie attaches automatically and CORS
