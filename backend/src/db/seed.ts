@@ -5,6 +5,7 @@ import {
   VacationRequest,
   VacationRequestStatus,
 } from "../entities/VacationRequest";
+import { normalizeReason } from "../lib/reason";
 
 // Cost factor 10 per D7 — fast enough for a local seed, strong enough that
 // the stored hashes are realistic.
@@ -69,7 +70,9 @@ const seed = async (): Promise<void> => {
         userId: alice.id,
         startDate: daysFromToday(7),
         endDate: daysFromToday(11),
-        reason: "Family visit",
+        // Deliberately padded: the stored row must read "Family visit", which
+        // is only true if the helper is actually wired (spec 4.7 §6.6).
+        reason: normalizeReason("  Family visit  "),
         status: VacationRequestStatus.Approved,
         reviewedBy: carla.id,
       }),
@@ -77,14 +80,14 @@ const seed = async (): Promise<void> => {
         userId: alice.id,
         startDate: daysFromToday(21),
         endDate: daysFromToday(25),
-        reason: "Autumn break",
+        reason: normalizeReason("Autumn break"),
         status: VacationRequestStatus.Pending,
       }),
       requests.create({
         userId: alice.id,
         startDate: daysFromToday(14),
         endDate: daysFromToday(16),
-        reason: "Moving apartments",
+        reason: normalizeReason("Moving apartments"),
         status: VacationRequestStatus.Rejected,
         reviewedBy: carla.id,
         comments: "Team is understaffed that week — please pick other dates.",
@@ -93,14 +96,14 @@ const seed = async (): Promise<void> => {
         userId: bob.id,
         startDate: daysFromToday(14),
         endDate: daysFromToday(18),
-        reason: "Hiking trip",
+        reason: normalizeReason("Hiking trip"),
         status: VacationRequestStatus.Pending,
       }),
       requests.create({
         userId: bob.id,
         startDate: daysFromToday(-30),
         endDate: daysFromToday(-26),
-        reason: "Spring holiday",
+        reason: normalizeReason("Spring holiday"),
         status: VacationRequestStatus.Approved,
         reviewedBy: carla.id,
       }),

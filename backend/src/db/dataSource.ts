@@ -5,6 +5,7 @@ import { getEnvValue } from "commoneventframework/dist/utils/getEnvValue";
 import { User } from "../entities/User";
 import { VacationRequest } from "../entities/VacationRequest";
 import { InitialSchema1785239525809 } from "../migrations/1785239525809-InitialSchema";
+import { FreeTextLength1785318163979 } from "../migrations/1785318163979-FreeTextLength";
 
 let dataSource: DataSource | null = null;
 let initPromise: Promise<DataSource> | null = null;
@@ -68,6 +69,6 @@ export const cliDataSource: Promise<DataSource> = loadEnv().then(() => {
     logging: true,
     uuidExtension: UUID_EXTENSION,
     entities: ENTITIES,
-    migrations: [InitialSchema1785239525809],
+    migrations: [InitialSchema1785239525809, FreeTextLength1785318163979],
   });
 });
