@@ -84,6 +84,7 @@ Rule per chunk: **branch `feature/<chunk-slug>` → `/spec <chunk>` → Q&A answ
 - [ ] 4.9 Requester UI: request form, my-requests list with statuses, shared team-vacations view (D1); *replaces 4.8's `MyRequestsPage`/`TeamPage` placeholders — route paths + meta fixed by spec 4.8 §5*; *request form's `reason` field carries `maxlength="500"` — inherited from 4.7's cap (spec 4.7 §3)*
 - [ ] 4.10 Validator UI: dashboard, filter by status + user, pagination, approve action, reject action with **required comment**; *replaces 4.8's `DashboardPage` placeholder — route path + meta fixed by spec 4.8 §5*; *resolve `userId`/`reviewedBy` to names client-side via `GET /users` — the dashboard serves bare uuids by design (spec 4.6 §8 Q10)*; *reject-comment field carries `maxlength="500"` — inherited from 4.7's cap (spec 4.7 §3)*
 - [ ] 4.11 Reusable components pass: extract StatusBadge, RequestTable/List, PaginationControls, FormField — no copy-pasted markup between the two interfaces
+- [x] 4.12 Auth-transport migration: JWT localStorage → httpOnly `SameSite=Lax` cookie (ADR 0006, D15) — cookie-only `verifyJwt`, mandatory `POST /logout`, login body `{ role, userId, expiresAt }`, mandatory Vite `/api` proxy, stale-token purge from 4.8-era localStorage. *Brief's gate: after 4.11 + Phase 5 green, beyond assignment budget — gate consciously overridden, executed 2026-07-29 directly from the brief with no /spec run (both human decisions; record + verification transcript: `docs/specs/12-cookie-transport.md`)*
 ## Phase 5 — Business-rules verification matrix
  
 Every rule: where enforced → unit test written → manually verified in UI.
@@ -108,6 +109,7 @@ Every rule: where enforced → unit test written → manually verified in UI.
 - [ ] Pagination correctness: total count (count query, not `data.length`), page boundaries, empty page, stable ordering
 - [ ] Error paths: wrong password, expired token, requester hitting validator endpoint (403 not 500)
 - [ ] **Scaffold cleanup:** delete `HelloWorld.vue`, `vue.svg`, `vite.svg`, default `frontend/README.md`; remove `handlers/hello.ts` + its route from `root.yaml` → rerun codegen
+- [ ] **Mark `docs/api-contract-draft.yaml` historical:** one-line header "superseded by `backend/src/root.yaml` as of 4.6 — kept as a design artifact, not maintained" — since 4.6 the root.yaml is authoritative (TDD §7) and the draft no longer tracks it (4.12's `/login`/`/logout` changes deliberately not ported); unmarked, it looks authoritative and lies
 - [ ] No secrets in repo; `.env.example` complete; JWT secret from env
 - [ ] Consistent formatting (Prettier/ESLint run clean)
 - [ ] `cef-gen-handlers` rerun after final `root.yaml` state — registry in sync

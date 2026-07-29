@@ -343,3 +343,15 @@ observe a difference from what the spec promised?**
    arguably demanded it; the gap was the spec's, not the implementation's.
    Forward fix: checklist 4.6 now reads "route + request/response schemas"
    so 4.6's spec inherits the obligation.
+
+---
+
+**2026-07-29 — Amendment (httpOnly-cookie migration, docs/specs/12-cookie-transport.md).**
+§5's `POST /login` contract is superseded: the JWT now travels only in a
+`Set-Cookie: token=<jwt>; HttpOnly; SameSite=Lax; Path=/; Max-Age=86400`
+response header (+ `Secure` when `COOKIE_SECURE=true`), and the 200 body
+becomes `{ role, userId, expiresAt }` (epoch ms). `verifyJwt` reads the bare
+token (cookie-transported, parsed by `auth/cookie.ts`); the
+`Authorization: Bearer` surface is retired, cookie-only by decision. §6's
+401/403 matrix is unchanged in meaning and was re-verified against cookie
+transport. Original §5 text left as written — point-in-time record.

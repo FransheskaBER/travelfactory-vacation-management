@@ -388,3 +388,27 @@ http://localhost:5173; backend dev server :8888; seeded users 4.1b)
    trivial follow-up delete if wanted.
 4. Backend `.env` (untracked, local) gained `dev_FRONT_END_URL` to
    attempt R13; kept — matches `.env.example`.
+
+---
+
+**2026-07-29 — Amendment (httpOnly-cookie migration, docs/specs/12-cookie-transport.md).**
+Three of this spec's decisions are superseded — original text stands as a
+point-in-time record:
+
+1. **§4/§5 decode-per-check is deleted, not contradicted.** 4.8 pinned
+   "`exp` is not stored in state; the getter decodes the token on each
+   check." An httpOnly token is unreadable by JS, so there is nothing to
+   decode and expiry *must* live in state — `expiresAt` (epoch ms) now
+   arrives in the login body and `syncFromToken` became `syncSession` (same
+   proactive/reactive two-halves design, same getter-caching rationale, new
+   data source).
+2. **§8 Q5 logout inverts.** "No /logout URL" assumed the client could
+   delete its own token. It can't delete an httpOnly cookie, so a backend
+   `POST /logout` (idempotent, unauthenticated by decision) became
+   mandatory; the store's logout action calls it and clears local state even
+   if the call fails.
+3. **§9 deviation 1 (FRONT_END_URL import-time baking) superseded-as-moot
+   locally.** The mandatory Vite dev proxy makes API calls same-origin, so
+   local CORS headers stop mattering entirely — the limitation is not
+   repaired, its local symptom evaporates. The adjudication remains accurate
+   for deployed Lambda, where the variable is genuinely effective.
