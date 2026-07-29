@@ -28,6 +28,17 @@ export default tseslint.config(
           ],
         },
       ],
+      // rules/frontend.md "Vue": all date display goes through
+      // src/utils/formatDate.ts — ad-hoc formatting drifts per component
+      // and depends on the machine's locale/timezone (spec 4.9 §8 Q7).
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector: "CallExpression[callee.property.name='toLocaleDateString']",
+          message:
+            "Use formatDate/formatMonth from src/utils/formatDate.ts (rules/frontend.md).",
+        },
+      ],
       // rules/frontend.md: no fetch in components; localStorage only inside
       // the auth store (single persistence point).
       "no-restricted-globals": [
@@ -61,7 +72,7 @@ export default tseslint.config(
             {
               group: ["**/stores/**"],
               message:
-                "client.ts must not import stores — use setTokenProvider, wired in main.ts (rules/frontend.md).",
+                "client.ts must not import stores — use setUnauthorizedHandler, wired in main.ts (rules/frontend.md).",
             },
           ],
         },
