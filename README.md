@@ -48,11 +48,15 @@ narrative is in [docs/tdd.md](docs/tdd.md); individual decisions are in
 
 ## Setup
 
+Run each code block from the repo root, in its own terminal. The backend and frontend dev servers each occupy a terminal.
+
 Start the database:
 
 ```bash
 docker compose up -d
 ```
+
+Wait a few seconds for Postgres to report healthy (docker compose ps) before running migrations.
 
 The first run pulls the Postgres image, which can take a minute.
 
