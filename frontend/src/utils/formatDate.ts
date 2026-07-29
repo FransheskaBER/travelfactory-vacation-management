@@ -25,3 +25,7 @@ export const formatDate = (isoDate: string): string =>
 /** "2026-08-21" → "August 2026" — the team view's month headers. */
 export const formatMonth = (isoDate: string): string =>
   MONTH_FORMAT.format(new Date(isoDate));
+
+/** ("2026-08-21", "2026-08-25") → "Aug 21, 2026 – Aug 25, 2026" (en dash). */
+export const formatDateRange = (startIso: string, endIso: string): string =>
+  `${formatDate(startIso)} – ${formatDate(endIso)}`;
