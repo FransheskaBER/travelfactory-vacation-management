@@ -46,9 +46,9 @@ If a handler grows past ~15 lines, logic is leaking out of the command.
   translation point. Handlers never build error JSON or pick status
   codes by hand. The status mapping lives in its statusFor() — read it
   there, never restate it in docs or comments.
-- Where toErrorResponse is invoked (per-handler catch vs. one shared
-  wrapper) is a spec decision for chunk 4.2/4.7 — raise it in that
-  spec's Q&A, don't decide it inline.
+- toErrorResponse is invoked in exactly one place: the global try/catch
+  in index.ts (settled at spec 4.2 §8 Q7; envelope audit spec 4.7 §6).
+  Handlers never catch-and-translate locally.
 - Auth failures (401/403) are the requireRole wrapper's job (ADR 0003),
   not DomainErrors. Never let a business rule surface as a 500.
 
