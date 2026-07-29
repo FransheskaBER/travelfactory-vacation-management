@@ -49,16 +49,30 @@ apiClient.interceptors.request.use((config) => {
   return config;
 });
 
+let onUnauthorized: () => void = () => {};
+
+/**
+ * Session-expiry hook, wired once in main.ts (same inversion as
+ * setTokenProvider — importing the store here would be circular). Fires only
+ * on 401 UNAUTHORIZED: INVALID_CREDENTIALS is also a 401, but it means "wrong
+ * password", which the login page renders — not a dead session (spec 4.8 §4).
+ */
+export const setUnauthorizedHandler = (handler: () => void): void => {
+  onUnauthorized = handler;
+};
+
 apiClient.interceptors.response.use(
   (response) => response,
   (error: AxiosError<ApiErrorBody>) => {
     const body = error.response?.data?.error;
-    return Promise.reject(
-      new ApiError(
-        error.response?.status ?? 0,
-        body?.code ?? "NETWORK_ERROR",
-        body?.message ?? error.message
-      )
+    const apiError = new ApiError(
+      error.response?.status ?? 0,
+      body?.code ?? "NETWORK_ERROR",
+      body?.message ?? error.message
     );
+    if (apiError.status === 401 && apiError.code === "UNAUTHORIZED") {
+      onUnauthorized();
+    }
+    return Promise.reject(apiError);
   }
 );
