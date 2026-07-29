@@ -16,7 +16,7 @@ import {
 } from "commoneventframework";
 import { CommonEvent, LambdaEvent } from "commoneventframework/dist/types/commonEvent";
 import { HandlerFn, InputParserFn } from "./handlers/types";
-import { toErrorResponse } from "./errors/toErrorResponse";
+import { errorResponse, toErrorResponse } from "./errors/toErrorResponse";
 import { registerLoggingListeners } from "./domain/listeners/loggingListeners";
 
 // Explicit wiring, once at startup — never an import side effect, so a
@@ -38,9 +38,9 @@ export const handler = async (
 		const routeConfig = getRouteConfig(commonEvent);
 
 		if (!routeConfig || !routeConfig.handler) {
-			return new Response(404, {
-				error: { code: "ROUTE_NOT_FOUND", message: "Route not found" }
-			});
+			// Through the shared helper like every other producer — the envelope
+			// literal lives in exactly one place (spec 4.7 §8 Q7).
+			return errorResponse(404, "ROUTE_NOT_FOUND", "Route not found");
 		}
 
 		const handlerFn = resolveHandlerRef(routeConfig.handler) as HandlerFn | undefined;

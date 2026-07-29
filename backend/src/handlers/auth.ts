@@ -12,8 +12,8 @@ import { commandBus } from "../domain/bus/CommandBus";
 
 // --- POST /login ---
 
-// Shape-only (ADR 0001): presence and type, no format rules — the input
-// validation pass (chunk 4.7) may revisit.
+// Shape-only (ADR 0001): presence and type, no format rules — 4.7
+// revisited and kept it that way (wording pass only, spec 4.7 §4).
 export const parseLoginInput: InputParserFn = (event: CommonEvent) => {
   let body: unknown;
   try {
@@ -26,10 +26,10 @@ export const parseLoginInput: InputParserFn = (event: CommonEvent) => {
   }
   const { email, password } = body as Record<string, unknown>;
   if (typeof email !== "string" || email.length === 0) {
-    return errorResponse(400, "INVALID_INPUT", "Missing field: email");
+    return errorResponse(400, "INVALID_INPUT", "email must be a non-empty string");
   }
   if (typeof password !== "string" || password.length === 0) {
-    return errorResponse(400, "INVALID_INPUT", "Missing field: password");
+    return errorResponse(400, "INVALID_INPUT", "password must be a non-empty string");
   }
   return { email, password } as LoginInput;
 };
