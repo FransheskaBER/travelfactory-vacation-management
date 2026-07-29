@@ -33,7 +33,7 @@ export class RejectVacationRequestCommand
     if (comment.length === 0) {
       throw new ValidationError(
         "COMMENT_REQUIRED",
-        "A rejection comment is required"
+        "comment must not be empty"
       );
     }
 
